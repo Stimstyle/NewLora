@@ -17,10 +17,12 @@ Including another URLconf
 # skudlora/urls.py
 
 from django.contrib import admin
+from django.contrib.auth import views as auth_views
 from django.urls import path, include  # Импортируем include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('access_control/', include('access_control.urls')),  # Подключаем URL-ы приложения access_control
+    path('', include('access_control.urls')),  # Подключаем URL-ы приложения access_control
+    path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
 ]
 
