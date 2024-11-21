@@ -1,0 +1,62 @@
+{% extends "admin/base.html" %}
+{% block content %}
+
+    <!-- Форма для поиска и настройки количества устройств на страницу -->
+    <form method="get" class="mb-4">
+        <div class="row">
+            <div class="col-8">
+                <input type="text" name="search" class="form-control" placeholder="Поиск по DevEUI, address, description" value="{{ request.GET.search }}">
+            </div>
+            <div class="col-2">
+                <select name="items_per_page" class="form-control">
+                    <option value="10" {% if items_per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="25" {% if items_per_page == 25 %}selected{% endif %}>25</option>
+                    <option value="50" {% if items_per_page == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if items_per_page == 100 %}selected{% endif %}>100</option>
+                </select>
+            </div>
+            <div class="col-2">
+                <button type="submit" class="btn btn-primary">Применить</button>
+            </div>
+        </div>
+    </form>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>devEUI</th>
+                <th>Address</th>
+                <th>Description</th>
+                <th>Device Class</th>
+                <th>HEX Input</th>
+                <th>Отправить</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for device in devices %}
+            <tr>
+                <td>{{ device.dev_eui }}</td>
+                <td>{{ device.address }}</td>
+                <td>{{ device.description }}</td>
+                <td>{{ device.device_class }}</td>
+                <td><input type="text" class="form-control" name="hex_value" placeholder="Введите HEX"></td>
+                <td><button type="button" class="btn btn-success">Отправить</button></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center">Нет данных для отображения</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Пагинация -->
+    <div class="pagination">
+        {% for i in devices.paginator.page_range %}
+            <a href="?page={{ i }}&search={{ request.GET.search }}&items_per_page={{ items_per_page }}" class="btn btn-link {% if devices.number == i %}active{% endif %}">
+                {{ i }}
+            </a>
+        {% endfor %}
+    </div>
+
+{% endblock %}

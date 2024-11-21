@@ -1,0 +1,123 @@
+{% extends "admin/base.html" %}
+{% block content %}
+
+    <!-- Форма для поиска и настройки количества устройств на страницу -->
+    <form method="get" class="mb-4" style="width: 100%;">
+        <div class="row">
+            <div class="col-6 d-flex">
+                <input type="text" name="search" class="form-control" style="height: 100%;" placeholder="Поиск по DevEUI, адресу, описанию" value="{{ request.GET.search }}">
+                <button type="submit" class="btn btn-primary ml-2">Поиск</button>
+            </div>
+            <div class="col-3" style="max-width: 100px; flex-shrink: 0; padding-left: 0;">
+                <select name="items_per_page" class="form-control"  onchange="this.form.submit()">
+                    <option value="50" {% if items_per_page == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if items_per_page == 100 %}selected{% endif %}>100</option>
+                    <option value="150" {% if items_per_page == 150 %}selected{% endif %}>150</option>
+                    <option value="200" {% if items_per_page == 200 %}selected{% endif %}>200</option>
+                </select>
+            </div>
+        </div>
+    </form>
+
+    <table class="table table-bordered" style="table-layout: fixed; border: 1px solid black;">
+        <thead>
+            <tr>
+                <th style="width: 18ch; text-align: center; vertical-align: middle; border: 1px solid black; background-color: #3498db; color: white;">DevEUI</th>
+                <th style="width: auto; text-align: center; vertical-align: middle; border: 1px solid black; background-color: #3498db; color: white;">Адрес установки</th>
+                <th style="width: auto; text-align: center; vertical-align: middle; border: 1px solid black; background-color: #3498db; color: white;">Описание</th>
+                <th style="width: 12ch; text-align: center; vertical-align: middle; border: 1px solid black; background-color: #3498db; color: white;">Тип</th>
+                <th style="width: 19ch; text-align: center; vertical-align: middle; border: 1px solid black; background-color: #3498db; color: white;">Ввод HEX</th>
+                <th style="width: 120px; text-align: center; vertical-align: middle; border: 1px solid black; background-color: #3498db; color: white;">Отправить</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for device in devices %}
+            <form action="{% url 'parser' %}" method="post">
+            {% csrf_token %}
+                <tr>
+                    <td style="text-align: center; vertical-align: middle; padding: 5px 5px; border: 1px solid black;">{{ device.dev_eui }}</td>
+                    <input type="hidden" name="dev_eui" value="{{ device.dev_eui }}">
+                    <input type="hidden" name="api_key_id" value="{{ device.api_key_id }}">
+                    <td style="padding: 5px 10px; border: 1px solid black;">{{ device.address }}</td>
+                    <td style="padding: 5px 10px; border: 1px solid black;">{{ device.description }}</td>
+                    <td style="text-align: center; vertical-align: middle; padding: 5px 10px; border: 1px solid black;">{{ device.device_class }}</td>
+                    <td style="text-align: center; vertical-align: middle; padding: 5px 10px; border: 1px solid black;">
+                    <input type="text" class="form-control" name="payload_hex" placeholder="Введите HEX" style="width: 100%; padding: 5px;">
+                    </td>
+                    <td style="text-align: center; vertical-align: middle; padding: 5px 5px; border: 1px solid black;">
+                        <button type="submit" class="btn btn-success send-btn" style="display: inline-block; padding: 2px 6px;">Отправить</button>
+                    </td>
+                </tr>
+            </form>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center" style="padding: 10px;">Нет данных для отображения</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <style>
+        /* Задание чередующихся цветов строк */
+        tbody tr:nth-child(odd) {
+            background-color: #3a3f44; /* Светло-серый для нечетных строк */
+        }
+    
+        tbody tr:nth-child(even) {
+            background-color: #272b30; /* Темно-серый для четных строк */
+        }
+    </style>    
+
+    <!-- Пагинация -->
+    <div class="pagination">
+        {% for i in devices.paginator.page_range %}
+            <a href="?page={{ i }}&search={{ request.GET.search }}&items_per_page={{ items_per_page }}" class="btn btn-link {% if devices.number == i %}active{% endif %}">
+                {{ i }}
+            </a>
+        {% endfor %}
+    </div>
+
+{% endblock %}
+
+<script>
+    document.querySelectorAll('.send-btn').forEach(function(button) {
+        button.addEventListener('click', function(event) {
+            // Получаем значения
+            var devEui = event.target.getAttribute('data-dev-eui');
+            var hexValue = event.target.closest('tr').querySelector('[name="hex_value"]').value;
+            var flushDownlinkQueue = true;  // Параметр фиксированный, как указано в задаче
+
+            // Проверяем, что HEX значение не пустое
+            if (!hexValue) {
+                alert('Введите HEX значение');
+                return;
+            }
+
+            // Отправляем данные на сервер через AJAX
+            fetch('{% url "your_view_url" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name="csrfmiddlewaretoken"]').value  // csrf токен
+                },
+                body: JSON.stringify({
+                    dev_eui: devEui,
+                    flush_downlink_queue: flushDownlinkQueue,
+                    payload_hex: hexValue
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Ошибка: ' + data.error);
+                } else {
+                    alert('Запрос успешно отправлен!');
+                }
+            })
+            .catch(error => {
+                alert('Ошибка при отправке запроса');
+                console.error('Ошибка:', error);
+            });
+        });
+    });
+</script>

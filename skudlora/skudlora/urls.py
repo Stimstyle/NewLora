@@ -21,8 +21,10 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, include  # Импортируем include
 
 urlpatterns = [
+    #path('admin_tools/', include('admin_tools.urls')),
     path('admin/', admin.site.urls),
     path('', include('access_control.urls')),  # Подключаем URL-ы приложения access_control
     path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
+    path('post_receiver/', include('post_receiver.urls')),  # Подключаем маршруты из post_receiver
 ]
 

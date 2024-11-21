@@ -1,0 +1,43 @@
+<li class="nav-item">
+    <a href="{% url 'admin:index' %}" class="nav-link">
+        <i class="nav-icon fas fa-home"></i>
+        <p>Dashboard</p>
+    </a>
+</li>
+{% if jazzmin_settings.navigation_expanded %}
+{% for header, app in menu_list.items %}
+    <li class="nav-header">{{ header }}</li>
+    {% for model in app %}
+        <li class="nav-item">
+            {% if model.changelist_url %}
+                <a href="{{ model.changelist_url }}" class="nav-link">
+                    <i class="nav-icon {{ model.icon }}"></i> <p>{{ model.name }}</p>
+                </a>
+            {% else %}
+                <span class="nav-link disabled">
+                    <i class="nav-icon {{ model.icon }}"></i> <p>{{ model.name }}</p>
+                </span>
+            {% endif %}
+        </li>
+    {% endfor %}
+{% endfor %}
+{% else %}
+{% for header, app in menu_list.items %}
+    <li class="nav-item has-treeview">
+        <a href="#" class="nav-link">
+            <i class="nav-icon {{ app.0.head_icon }}"></i>
+            <p>{{ header }} <i class="fas fa-angle-left right"></i></p>
+        </a>
+        <ul class="nav nav-treeview" style="display: none;">
+            {% for model in app %}
+                <li class="nav-item">
+                    <a href="{% if model.changelist_url %}{{ model.changelist_url }}{% else %}javascript:void(0){% endif %}" class="nav-link">
+                        <i class="nav-icon {{ model.icon }}"></i>
+                        <p>{{ model.name }}</p>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </li>
+{% endfor %}
+{% endif %}
