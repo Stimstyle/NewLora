@@ -37,8 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'access_control',
+    'rest_framework',
     'post_receiver',
-    'post_sender',
+    'UserDash',
     'post_receiver.authconfig.CustomAuthConfig', #ЕСЛИ что это кастом 'django.contrib.auth',
 ]
 
@@ -58,12 +59,11 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-        os.path.join(BASE_DIR, 'templates')
+        os.path.join(BASE_DIR, 'access_control/templates', 'UserDash/templates')
         ],
         'APP_DIRS': False,
         'OPTIONS': {
             'loaders': [
-                #'admin_tools.template_loaders.Loader',
                 'django.template.loaders.filesystem.Loader',
                 'django.template.loaders.app_directories.Loader',  # Если нужно использовать шаблоны из приложений                
             ],
