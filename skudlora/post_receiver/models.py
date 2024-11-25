@@ -16,9 +16,21 @@ class DeviceData(models.Model):
     time = models.DateTimeField(default=timezone.now)  # Устанавливаем значение по умолчанию
     rssi = models.IntegerField(null=True)
     lo_ra_snr = models.IntegerField(null=True)
+
+    latitude = models.FloatField(null=True, blank=True, verbose_name="Широта")
+    longitude = models.FloatField(null=True, blank=True, verbose_name="Долгота")
+    altitude = models.FloatField(null=True, blank=True, verbose_name="Высота")
+    temperature = models.FloatField(null=True, blank=True, verbose_name="Температура")
+    battery_level = models.FloatField(null=True, blank=True, verbose_name="Уровень заряда")
+    lock_status = models.CharField(max_length=50, null=True, blank=True, verbose_name="Статус замка")
+    alarm_status = models.CharField(max_length=50, null=True, blank=True, verbose_name="Статус тревоги")
+    night_mode = models.BooleanField(default=False, verbose_name="Ночной режим")
     # Связь с таблицей APIKey
     api_key = models.ForeignKey('APIKey', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="API Ключ")
     
+
+
+
     def __str__(self):
         return f"Device: {self.device_name}, DevEUI: {self.dev_eui}, Time: {self.time}"
     class Meta:

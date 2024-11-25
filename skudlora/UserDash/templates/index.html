@@ -8,7 +8,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>S.E.L.I.K.O.</title>
+  <title>.S.E.L.I.K.O. - главная страница</title>
   <link rel="icon" href="{% static 'icon/dashuser.ico' %}" type="image/x-icon">
   <link rel="shortcut icon" href="{% static 'icon/dashuser.ico' %}" type="image/x-icon">
   <!-- Google Font: Source Sans Pro -->
@@ -16,6 +16,8 @@ scratch. This page gets rid of all links and provides the needed markup only.
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
   <link rel="stylesheet" href="{% static 'dist/css/adminlte.css' %}">
+  <script src="https://code.iconify.design/2/2.0.3/iconify.min.js"></script>
+
 </head>
 <body class="hold-transition sidebar-mini">
 <div class="wrapper">
@@ -70,53 +72,54 @@ scratch. This page gets rid of all links and provides the needed markup only.
     </div>
 
     <!-- Sidebar -->
-    <div class="sidebar" style="margin-top: 1rem;">
+    <div class="sidebar">
       <!-- SidebarSearch Form -->
-      <div class="form-inline">
-        <div class="input-group" data-widget="sidebar-search">
-          <input class="form-control form-control-sidebar" type="search" placeholder="Search" aria-label="Search">
-          <div class="input-group-append">
-            <button class="btn btn-sidebar">
-              <i class="fas fa-search fa-fw"></i>
-            </button>
-          </div>
+
+      <div class="user-panel mt-2 pb-2 mb-3 d-flex">
+        <div class="w-100 d-flex justify-content-between align-items-center">
+          <a href="#" class="d-inline-block text-shadow">&nbsp&nbsp "ТСЖ" номер №1</a>
+          <button class="btn btn-link p-1">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
         </div>
       </div>
+
+      
 
       <!-- Sidebar Menu -->
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
           <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
-          <li class="nav-item menu-open">
-            <a href="#" class="nav-link active">
+          <li class="nav-item">
+            <a href="{% url 'index' %}" class="nav-link active">
               <i class="nav-icon fas fa-tachometer-alt"></i>
               <p>
-                Starter Pages
-                <i class="right fas fa-angle-left"></i>
+                Главная
               </p>
             </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="#" class="nav-link active">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Active Page</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="#" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Inactive Page</p>
-                </a>
-              </li>
-            </ul>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'devices' %}" class="nav-link">
+              <i class="fas fa-broadcast-tower"></i>
+              <p>
+                Устройства
+              </p>
+            </a>
           </li>
           <li class="nav-item">
             <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-th"></i>
+              <i class="far fa-envelope"></i>
               <p>
-                Simple Link
-                <span class="right badge badge-danger">New</span>
+                Почта
+              </p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link">
+              <i class="fas fa-bell"></i>
+              <p>
+                Оповещения
               </p>
             </a>
           </li>
@@ -134,12 +137,12 @@ scratch. This page gets rid of all links and provides the needed markup only.
       <div class="container-fluid">
         <div class="row mb-2">
           <div class="col-sm-6">
-            <h1 class="m-0">Starter Page</h1>
+            <h1 class="m-0">Гланая страница</h1>
           </div><!-- /.col -->
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="#">Home</a></li>
-              <li class="breadcrumb-item active">Starter Page</li>
+              <li class="breadcrumb-item"><a href="#">Дом</a></li>
+              <li class="breadcrumb-item active">Гланая страница</li>
             </ol>
           </div><!-- /.col -->
         </div><!-- /.row -->
@@ -150,62 +153,145 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <!-- Main content -->
     <div class="content">
       <div class="container-fluid">
+
+
         <div class="row">
-          <div class="col-lg-6">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Card title</h5>
-
-                <p class="card-text">
-                  Some quick example text to build on the card title and make up the bulk of the card's
-                  content.
-                </p>
-
-                <a href="#" class="card-link">Card link</a>
-                <a href="#" class="card-link">Another link</a>
+          <div class="col-lg-3 col-6">
+            <!-- small box -->
+            <div class="small-box bg-info">
+              <div class="inner">
+                <h3>150</h3>
+                <p>Уведомления</p>
               </div>
-            </div>
-
-            <div class="card card-primary card-outline">
-              <div class="card-body">
-                <h5 class="card-title">Card title</h5>
-
-                <p class="card-text">
-                  Some quick example text to build on the card title and make up the bulk of the card's
-                  content.
-                </p>
-                <a href="#" class="card-link">Card link</a>
-                <a href="#" class="card-link">Another link</a>
+              <div class="icon">
+                <span class="iconify" data-icon="mdi:bell-alert" data-inline="false"></span>
               </div>
-            </div><!-- /.card -->
-          </div>
-          <!-- /.col-md-6 -->
-          <div class="col-lg-6">
-            <div class="card">
-              <div class="card-header">
-                <h5 class="m-0">Featured</h5>
-              </div>
-              <div class="card-body">
-                <h6 class="card-title">Special title treatment</h6>
-
-                <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-                <a href="#" class="btn btn-primary">Go somewhere</a>
-              </div>
-            </div>
-
-            <div class="card card-primary card-outline">
-              <div class="card-header">
-                <h5 class="m-0">Featured</h5>
-              </div>
-              <div class="card-body">
-                <h6 class="card-title">Special title treatment</h6>
-
-                <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-                <a href="#" class="btn btn-primary">Go somewhere</a>
-              </div>
+              <a href="#" class="small-box-footer">Открыть страницу <i class="fas fa-arrow-circle-right"></i></a>
             </div>
           </div>
-          <!-- /.col-md-6 -->
+          <!-- ./col -->
+          <div class="col-lg-3 col-6">
+            <!-- small box -->
+            <div class="small-box bg-success">
+              <div class="inner">
+                <h3>{{ online_count }}&nbspиз&nbsp{{ total_devices }}</h3> <!-- Слева онлайн, справа оффлайн -->
+                <p>Устройств онлайн</p>
+              </div>
+              <div class="icon">
+                <span class="iconify" data-icon="eos-icons:iot" data-inline="false"></span>
+              </div>
+              <a href="{% url 'devices' %}" class="small-box-footer">Открыть страницу <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+          </div>
+          <!-- ./col -->
+          <div class="col-lg-3 col-6">
+            <!-- small box -->
+            <div class="small-box bg-primary">
+              <div class="inner">
+                <h3>44</h3>
+                <p>Письма</p>
+              </div>
+              <div class="icon">
+                <span class="iconify" data-icon="ic:twotone-local-post-office" data-inline="false"></span>
+              </div>
+              <a href="#" class="small-box-footer">Открыть страницу <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+          </div>
+          <!-- ./col -->
+          <div class="col-lg-3 col-6">
+            <!-- small box -->
+            <div class="small-box bg-danger">
+              <div class="inner">
+                <h3>5</h3>
+                <p>ПРЕДУПРЕЖДЕНИЯ</p>
+              </div>
+              <div class="icon">
+                <span class="iconify" data-icon="mingcute:alert-fill" data-inline="false"></span>
+              </div>
+              <a href="#" class="small-box-footer">Открыть страницу <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+          </div>
+          <!-- ./col -->
+        </div>
+
+
+        <div class="row">
+          <div class="col-12">
+            <div class="card card-primary card-outline">
+              <div class="card-header">
+                <h3 class="card-title">Панели управления</h3>
+                <div class="card-tools">
+                  <form method="get" action="">
+                    <div class="input-group input-group-sm custom-input-group custom-input-group-sm">
+                      <input type="text" name="search" class="form-control float-right" placeholder="Поиск по адресам" value="{{ search_query }}">
+                      <div class="input-group-append">
+                        <button type="submit" class="btn btn-default">
+                          <i class="fas fa-search"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+              <!-- /.card-header -->
+              <div class="card-body table-responsive p-0">
+                <table class="table table-sm th text-nowrap">
+                  <thead>
+                    <tr>
+                      <th style="width: auto;">Адрес</th>
+                      <th style="width: 14ch;">Статус</th>
+                      <th style="width: 1%; white-space: nowrap;">Действие</th>
+                      <th style="width: 1ch; text-align: center;"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for device in devices %}
+                      <tr>
+                        <td>{{ device.address }}</td>
+                        <td>
+                          {% with current_time=now %}
+                            {% if device.time|date:"Y-m-d H:i:s" < current_time|date:"Y-m-d H:i:s"|add:"-1 hour" %}
+                              Оффлайн
+                            {% else %}
+                              Онлайн
+                            {% endif %}
+                          {% endwith %}
+                        </td>
+                        <td><button class="btn btn-primary btn-sm" style="background-color: #007bff;">Открыть</button></td>
+                        <td>
+                          {% if device.status == "Онлайн" %}
+                            <i class="fas fa-circle text-success" style="transform: translate(0%, 20%);"></i>
+                          {% else %}
+                            <i class="fas fa-circle text-danger" style="transform: translate(0%, 20%);"></i>
+                          {% endif %}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                  
+                </table>
+                <div class="card-footer clearfix">
+                  <ul class="pagination pagination-sm m-0 float-right">
+                    {% if devices.has_previous %}
+                      <li class="page-item"><a class="page-link" href="?page=1">&laquo;</a></li>
+                      <li class="page-item"><a class="page-link" href="?page={{ devices.previous_page_number }}">‹</a></li>
+                    {% endif %}
+                    {% for page_num in devices.paginator.page_range %}
+                      <li class="page-item {% if devices.number == page_num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                      </li>
+                    {% endfor %}
+                    {% if devices.has_next %}
+                      <li class="page-item"><a class="page-link" href="?page={{ devices.next_page_number }}">›</a></li>
+                      <li class="page-item"><a class="page-link" href="?page={{ devices.paginator.num_pages }}">&raquo;</a></li>
+                    {% endif %}
+                  </ul>
+                </div>
+              </div>
+              <!-- /.card-body -->
+            </div>   
+
+          </div>
         </div>
         <!-- /.row -->
       </div><!-- /.container-fluid -->
@@ -226,11 +312,8 @@ scratch. This page gets rid of all links and provides the needed markup only.
   <!-- Main Footer -->
   <footer class="main-footer">
     <!-- To the right -->
-    <div class="float-right d-none d-sm-inline">
-      Anything you want
-    </div>
     <!-- Default to the left -->
-    <strong>Copyright &copy; 2014-2021 <a href="https://adminlte.io">AdminLTE.io</a>.</strong> All rights reserved.
+    <strong><a href="#">ООО "Пэск"</a>.</strong> Все права защищены.
   </footer>
 </div>
 <!-- ./wrapper -->

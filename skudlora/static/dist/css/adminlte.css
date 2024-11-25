@@ -10,6 +10,67 @@
  * Copyright 2011-2021 Twitter, Inc.
  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
  */
+
+
+
+.bg-red {
+  background-color: #dc3545 !important; /* Красный */
+  color: #fff;
+}
+
+.bg-orange {
+  background-color: #fd7e14 !important; /* Оранжевый */
+  color: #fff;
+}
+
+.bg-yellow {
+  background-color: #ffc107 !important; /* Жёлтый */
+  color: #212529;
+}
+
+.bg-green {
+  background-color: #28a745 !important; /* Зелёный */
+  color: #fff;
+}
+
+.bg-dark-green {
+  background-color: #90ee90 !important; /* Салатовый */
+  color: #000;
+}
+
+
+
+.bg-light {
+  background-color: #f8f9fa !important;
+}
+ 
+ .custom-input-group {
+  width: 150px !important;
+}
+
+@media (min-width: 768px) {
+  .custom-input-group {
+    width: 450px !important;
+  }
+}
+
+
+ .text-shadow {
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important; /* Добавляет тень тексту */
+}
+
+.user-panel .info a, .user-panel .info button {
+  white-space: nowrap !important; /* Запрещает перенос на другую строку */
+}
+
+.user-panel .info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* Расстояние между текстом и кнопкой */
+}
+
+
 :root {
   --blue: #007bff;
   --indigo: #6610f2;
@@ -57,6 +118,8 @@ html {
 article, aside, figcaption, figure, footer, header, hgroup, main, nav, section {
   display: block;
 }
+
+
 
 body {
   margin: 0;
@@ -33117,7 +33180,7 @@ html.maximized-card {
 .card-body.p-0 .table tfoot > tr > td:first-of-type,
 .card-body.p-0 .table tbody > tr > th:first-of-type,
 .card-body.p-0 .table tbody > tr > td:first-of-type {
-  padding-left: 1.5rem;
+  padding-left: 0.5rem;
 }
 
 .card-body.p-0 .table thead > tr > th:last-of-type,
@@ -33126,7 +33189,7 @@ html.maximized-card {
 .card-body.p-0 .table tfoot > tr > td:last-of-type,
 .card-body.p-0 .table tbody > tr > th:last-of-type,
 .card-body.p-0 .table tbody > tr > td:last-of-type {
-  padding-right: 1.5rem;
+  padding-right: 0.5rem;
 }
 
 .table-hover tbody tr.expandable-body:hover {

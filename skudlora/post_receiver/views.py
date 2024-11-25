@@ -30,7 +30,48 @@ def handle_post_request(request):
         # Для rxInfo (если это список, можно взять первый элемент)
         rssi = data.get("rxInfo", [{}])[0].get("rssi")
         lo_ra_snr = data.get("rxInfo", [{}])[0].get("loRaSNR")
+        latitude = data.get("rxInfo", [{}])[0].get("location", {}).get("latitude")
+        longitude = data.get("rxInfo", [{}])[0].get("location", {}).get("longitude")
+        altitude = data.get("rxInfo", [{}])[0].get("location", {}).get("altitude")
 
+        # Напряжение в Вольтах преобразоователь hex to txt
+        voltage_hex = payload_data[:4]
+        voltage = int(voltage_hex, 16)
+        voltage_value = voltage / 1000  # Напряжение в Вольтах
+        battery_percentage = ((voltage_value - 8.6) / (12.8 - 8.6)) * 100   
+        battery_percentage = round(battery_percentage, 1)
+
+        # Преобразование в температуру
+        raw_temperature_hex = payload_data[4:8]
+        raw_temperature = int(raw_temperature_hex, 16)
+        temperature = (raw_temperature / 256) * 2
+
+
+        # Побитный if-else
+        payload_data_int = int(payload_data, 16)
+        last_two_bytes = payload_data_int & 0xFF
+        binary_bits = format(last_two_bytes, '08b')
+        UnLockStatus = binary_bits[7]  # 0-й бит
+        AlarmStatus = binary_bits[6]   # 1-й бит
+        NightMode = binary_bits[5]     # 2-й бит
+        # Обрабатываем статус UnLockStatus
+        if UnLockStatus == "1":
+            UnLockStatus = True
+            buttonStatus = False  # Если замок открыт, кнопка заблокирована
+        else:
+            UnLockStatus = False
+
+        # Обрабатываем AlarmStatus
+        if AlarmStatus == "1":
+            AlarmStatus = True
+        else:
+            AlarmStatus = False
+
+        # Обрабатываем NightMode
+        if NightMode == "1":
+            NightMode = True
+        else:
+            NightMode = False
         # Логика обработки данных
         print(f"deviceName: {device_name}")
         print(f"devEUI: {dev_eui}")
@@ -38,17 +79,37 @@ def handle_post_request(request):
         print(f"time: {time}")
         print(f"rssi: {rssi}")
         print(f"loRaSNR: {lo_ra_snr}")
+        print(f"latitude: {latitude}")
+        print(f"longitude: {longitude}")
+        print(f"altitude: {altitude}")
+        print(f"Напряжение: {voltage_value} В")
+        print(f"Процент заряда: {battery_percentage}%")
+        print(f"Температура: {temperature} °C")
+        print(f"UnLockStatus: {UnLockStatus}")
+        print(f"AlarmStatus: {AlarmStatus}")
+        print(f"NightMode: {NightMode}")
+        print(f"raw_number: {binary_bits}")
+
 
         # Проверка на существование записи с таким deviceName и dev_eui
         device_data = DeviceData.objects.filter(device_name=device_name, dev_eui=dev_eui).first()
 
         if device_data:
             # Если запись существует, обновляем данные
+            # Если запись существует, обновляем данные
             device_data.device_name = device_name
             device_data.data = payload_data
             device_data.time = time
             device_data.rssi = rssi
             device_data.lo_ra_snr = lo_ra_snr
+            device_data.latitude = latitude
+            device_data.longitude = longitude
+            device_data.altitude = altitude
+            device_data.battery_level = battery_percentage
+            device_data.temperature = temperature
+            device_data.lock_status  = UnLockStatus
+            device_data.alarm_status = AlarmStatus
+            device_data.night_mode = NightMode
             device_data.save()
             print(f"Устройство с deviceName '{device_name}' и devEUI '{dev_eui}' обновлено.")
         else:
