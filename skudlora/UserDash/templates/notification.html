@@ -54,9 +54,10 @@ scratch. This page gets rid of all links and provides the needed markup only.
         </a>
       </li>
       <li class="nav-item">
+        {% load custom_tags %}
         <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">
           <i class="far fa-bell"></i>
-          <span class="badge badge-warning navbar-badge">15</span>
+          <span class="badge badge-warning navbar-badge ml-3" style="transform: translate(20%, -20%);">{% unread_notifications_count request.user %}</span>
         </a>
       </li>
     </ul>
@@ -93,7 +94,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
                with font-awesome or any other icon font library -->
           <li class="nav-item">
             <a href="{% url 'index' %}" class="nav-link">
-              <i class="nav-icon fas fa-tachometer-alt"></i>
+              <i class="fas fa-tachometer-alt"></i>
               <p>
                 Главная
               </p>
@@ -188,12 +189,12 @@ scratch. This page gets rid of all links and provides the needed markup only.
                     <div class="col-sm-3">
                       <div class="form-group">
                         <label>Отобразить за...</label>
-                        <select class="custom-select">
-                          <option>Все время</option>
-                          <option>День</option>
-                          <option>Недел</option>
-                          <option>Месяц</option>
-                          <option>Год</option>
+                        <select class="custom-select" name="time_range">
+                          <option value="all" {% if time_range == "all" %}selected{% endif %}>Все время</option>
+                          <option value="day" {% if time_range == "day" %}selected{% endif %}>День</option>
+                          <option value="week" {% if time_range == "week" %}selected{% endif %}>Неделя</option>
+                          <option value="month" {% if time_range == "month" %}selected{% endif %}>Месяц</option>
+                          <option value="year" {% if time_range == "year" %}selected{% endif %}>Год</option>
                         </select>
                       </div>
                     </div>
@@ -201,11 +202,11 @@ scratch. This page gets rid of all links and provides the needed markup only.
                       <div class="form-group">
                         <label>Кол-во элементов на странице</label>
                         <select class="custom-select" name="items_per_page">
-                          <option value="25" {% if items_per_page == '25' %}selected{% endif %}>25</option>
-                          <option value="50" {% if items_per_page == '50' %}selected{% endif %}>50</option>
-                          <option value="100" {% if items_per_page == '100' %}selected{% endif %}>100</option>
-                          <option value="200" {% if items_per_page == '200' %}selected{% endif %}>200</option>
-                      </select>
+                          <option value="25" {% if items_per_page == 25 %}selected{% endif %}>25</option>
+                          <option value="50" {% if items_per_page == 50 %}selected{% endif %}>50</option>
+                          <option value="100" {% if items_per_page == 100 %}selected{% endif %}>100</option>
+                          <option value="200" {% if items_per_page == 200 %}selected{% endif %}>200</option>
+                        </select>
                       </div>
                     </div>
                   </div>

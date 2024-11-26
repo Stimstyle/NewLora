@@ -54,9 +54,10 @@ scratch. This page gets rid of all links and provides the needed markup only.
         </a>
       </li>
       <li class="nav-item">
+        {% load custom_tags %}
         <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">
           <i class="far fa-bell"></i>
-          <span class="badge badge-warning navbar-badge">15</span>
+          <span class="badge badge-warning navbar-badge ml-3" style="transform: translate(20%, -20%);">{% unread_notifications_count request.user %}</span>
         </a>
       </li>
     </ul>
@@ -189,13 +190,13 @@ scratch. This page gets rid of all links and provides the needed markup only.
                         <table class="table table-sm th text-nowrap">
                           <thead>
                             <tr>
-                              <th style="width: 20ch;">DevEUI</th>
+                              <th style="width: 20ch; text-align: center; vertical-align: middle;">DevEUI</th>
                               <th style="width: auto;">Адрес</th>
                               <th style="width: auto;">Описание</th>
-                              <th style="width: 12ch;">Тип</th>
-                              <th style="width: 14ch;">Статус</th>
-                              <th style="width: 1%; white-space: nowrap;">Действие</th>
-                              <th style="width: 1ch; position: relative;"><i class="fas fa-plug" style="transform: translate(45%, 0%);"></i></th>
+                              <th style="width: 12ch; text-align: center; vertical-align: middle;">Тип</th>
+                              <th style="width: 14ch; text-align: center; vertical-align: middle;">Статус</th>
+                              <th style="width: 1.5%; white-space: nowrap; text-align: center; vertical-align: middle;">Действие</th>
+                              <th style="width: 1ch; position: relative;"><i class="fas fa-signal" style="transform: translate(10%, 0%);"></i></th>
                             </tr>
                           </thead>
                           <tbody>
@@ -325,14 +326,14 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             <table class="table table-sm th" >
                               <thead>
                                 <tr>
-                                    <th style="width: 150px;">DevEUI</th>
+                                    <th style="width: 150px; text-align: center; vertical-align: middle;">DevEUI</th>
                                     <th style="width: auto;">Адрес</th>
-                                    <th style="width: 40px;">(&deg;C)</th>
-                                    <th style="width: 150px;">Мощность сигнала</th>
-                                    <th style="width: 30px;">RSSI</th>
-                                    <th style="width: 150px;">Уровень помех</th>
-                                    <th style="width: 30px;">SNR</th>
-                                    <th style="width: 150px;">Уровень заряда</th>
+                                    <th style="width: 40px; text-align: center; vertical-align: middle;">(&deg;C)</th>
+                                    <th style="width: 150px; text-align: center; vertical-align: middle;">Мощность сигнала</th>
+                                    <th style="width: 30px; text-align: center; vertical-align: middle;">RSSI</th>
+                                    <th style="width: 150px; text-align: center; vertical-align: middle;">Уровень помех</th>
+                                    <th style="width: 30px; text-align: center; vertical-align: middle;">SNR</th>
+                                    <th style="width: 150px; text-align: center; vertical-align: middle;">Уровень заряда</th>
                                     <th style="width: 10px;"><i class="fas fa-battery-full" style="transform: translate(75%, 0%);"></i></th>
                                   </tr>                                  
                               </thead>

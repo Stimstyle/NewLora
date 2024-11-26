@@ -54,9 +54,10 @@ scratch. This page gets rid of all links and provides the needed markup only.
         </a>
       </li>
       <li class="nav-item">
+        {% load custom_tags %}
         <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">
           <i class="far fa-bell"></i>
-          <span class="badge badge-warning navbar-badge">15</span>
+          <span class="badge badge-warning navbar-badge ml-3" style="transform: translate(20%, -20%);">{% unread_notifications_count request.user %}</span>
         </a>
       </li>
     </ul>
@@ -156,17 +157,18 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
 
         <div class="row">
+          {% load custom_tags %}
           <div class="col-lg-3 col-6">
             <!-- small box -->
             <div class="small-box bg-info">
               <div class="inner">
-                <h3>150</h3>
+                <h3>{% unread_notifications_count request.user %}</h3>
                 <p>Уведомления</p>
               </div>
               <div class="icon">
                 <span class="iconify" data-icon="mdi:bell-alert" data-inline="false"></span>
               </div>
-              <a href="#" class="small-box-footer">Открыть страницу <i class="fas fa-arrow-circle-right"></i></a>
+              <a href="{% url 'notification' %}" class="small-box-footer">Открыть страницу <i class="fas fa-arrow-circle-right"></i></a>
             </div>
           </div>
           <!-- ./col -->
@@ -202,13 +204,13 @@ scratch. This page gets rid of all links and provides the needed markup only.
             <!-- small box -->
             <div class="small-box bg-danger">
               <div class="inner">
-                <h3>5</h3>
+                <h3>{% warning_notifications_count request.user %}</h3>
                 <p>ПРЕДУПРЕЖДЕНИЯ</p>
               </div>
               <div class="icon">
                 <span class="iconify" data-icon="mingcute:alert-fill" data-inline="false"></span>
               </div>
-              <a href="#" class="small-box-footer">Открыть страницу <i class="fas fa-arrow-circle-right"></i></a>
+              <a href="{% url 'notification' %}" class="small-box-footer">Открыть страницу <i class="fas fa-arrow-circle-right"></i></a>
             </div>
           </div>
           <!-- ./col -->
