@@ -151,126 +151,152 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <!-- /.content-header -->
 
     <!-- Main content -->
-    <div class="content">
-      <div class="container-fluid">
-        <div class="row">
-          <div class="col-12">
-            <div class="card card-primary">
-              <div class="card-header">
-                <h3 class="card-title">Уведомления</h3>
-              </div>
-              <div class="card-body">
-                <div class="row">
-                  <div class="col-sm-3">
-                    <div class="form-group">
-                      <label>Тип уведомлений</label>
-                      <select class="custom-select">
-                        <option>---</option>
-                        <option>Предупреждающие уведомления</option>
-                        <option>Уведомления об успехе</option>
-                        <option>Уведомления об ошибках</option>
-                        <option>Информационные уведомления</option>
-                        <option>Системные уведомления</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="col-sm-3">
-                    <div class="form-group">
-                      <label>Отобразить пользователей</label>
-                      <select class="custom-select">
-                        <option>---</option>
-                        <option>Дом.РУ</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="col-sm-3">
-                    <div class="form-group">
-                      <label>Отобразить за...</label>
-                      <select class="custom-select">
-                        <option>Все время</option>
-                        <option>День</option>
-                        <option>Недел</option>
-                        <option>Месяц</option>
-                        <option>Год</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="col-sm-3">
-                    <div class="form-group">
-                      <label>Кол-во элементов на странице</label>
-                      <select class="custom-select">
-                        <option>50</option>
-                        <option>100</option>
-                        <option>150</option>
-                        <option>200</option>
-                      </select>
-                    </div>
-                  </div>
+    <form method="post" action="{% url 'notification' %}">
+      {% csrf_token %}
+      <div class="content">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-12">
+              <div class="card card-primary">
+                <div class="card-header">
+                  <h3 class="card-title">Уведомления</h3>
                 </div>
-                <label>Настройки поиска</label>
-                <div class="row">
-                  <div class="col-sm-3">
-                    <div class="form-group">
-                        <div class="custom-control custom-switch custom-switch-off-danger custom-switch-on-success">
-                          <input type="checkbox" class="custom-control-input" id="customSwitch3">
-                          <label class="custom-control-label" for="customSwitch3">Отключить системные уведомления</label>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-sm-3">
+                        <div class="form-group">
+                            <label>Тип уведомлений</label>
+                            <select class="custom-select" name="notification_type">
+                                <option value="">---</option>
+                                <option value="warning" {% if notification_type == 'warning' %}selected{% endif %}>Предупреждающие уведомления</option>
+                                <option value="success" {% if notification_type == 'success' %}selected{% endif %}>Уведомления об успехе</option>
+                                <option value="error" {% if notification_type == 'error' %}selected{% endif %}>Уведомления об ошибках</option>
+                                <option value="info" {% if notification_type == 'info' %}selected{% endif %}>Информационные уведомления</option>
+                                <option value="system" {% if notification_type == 'system' %}selected{% endif %}>Системные уведомления</option>
+                            </select>
                         </div>
                     </div>
+                    <div class="col-sm-3">
+                      <div class="form-group">
+                        <label>Отобразить пользователей</label>
+                        <select class="custom-select">
+                          <option>---</option>
+                          <option>Дом.РУ</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-sm-3">
+                      <div class="form-group">
+                        <label>Отобразить за...</label>
+                        <select class="custom-select">
+                          <option>Все время</option>
+                          <option>День</option>
+                          <option>Недел</option>
+                          <option>Месяц</option>
+                          <option>Год</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-sm-3">
+                      <div class="form-group">
+                        <label>Кол-во элементов на странице</label>
+                        <select class="custom-select" name="items_per_page">
+                          <option value="25" {% if items_per_page == '25' %}selected{% endif %}>25</option>
+                          <option value="50" {% if items_per_page == '50' %}selected{% endif %}>50</option>
+                          <option value="100" {% if items_per_page == '100' %}selected{% endif %}>100</option>
+                          <option value="200" {% if items_per_page == '200' %}selected{% endif %}>200</option>
+                      </select>
+                      </div>
+                    </div>
                   </div>
-                </div> 
-                <div class="row">
-                  <div class="col-auto">
-                    <button type="submit" class="btn btn-success">Применить</button>
-                  </div>
-                  <div class="col-auto">
-                    <button type="submit" class="btn btn-warning">Выбрать все уведомления</button>
-                  </div>
-                  <div class="col-auto">
-                    <button type="submit" class="btn btn-warning">Отметить как прочитано</button>
-                  </div>
-                  <div class="col-auto">
-                    <button type="submit" class="btn btn-danger">Удалить</button>
+                  <label>Настройки поиска</label>
+                  <div class="row">
+                    <div class="col-sm-3">
+                      <div class="form-group">
+                          <div class="custom-control custom-switch custom-switch-off-danger custom-switch-on-success">
+                            <input type="checkbox" class="custom-control-input" id="customSwitch3">
+                            <label class="custom-control-label" for="customSwitch3">Отключить системные уведомления</label>
+                          </div>
+                      </div>
+                    </div>
+                  </div> 
+                  <div class="row">
+                    <div class="col-auto mt-3 mt-md-0">
+                      <button type="submit" class="btn btn-success">Применить</button>
+                    </div>
+                    <div class="col-auto mt-3 mt-md-0">
+                      <button type="submit" class="btn btn-warning" name="select_all" value="true">Выбрать все уведомления</button>
+                    </div>
+                    <div class="col-auto mt-3 mt-md-0">
+                      <button type="submit" class="btn btn-warning" name="mark_as_read">Отметить как прочитано</button>
+                    </div>
+                    <div class="col-auto mt-3 mt-md-0">
+                      <button type="submit" class="btn btn-danger" name="delete_selected">Удалить</button>
+                    </div>
                   </div>
                 </div>
+                <!-- Пагинация -->
+                  <div class="card-footer clearfix">
+                    <ul class="pagination pagination-sm m-0 float-left">
+                        {% if notifications.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?page=1&items_per_page={{ items_per_page }}">&laquo;</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ notifications.previous_page_number }}&items_per_page={{ items_per_page }}">‹</a></li>
+                        {% endif %}
+                        {% for page_num in page_range %}
+                            <li class="page-item {% if notifications.number == page_num %}active{% endif %}">
+                                <a class="page-link" href="?page={{ page_num }}&items_per_page={{ items_per_page }}">{{ page_num }}</a>
+                            </li>
+                        {% endfor %}
+                        {% if notifications.has_next %}
+                            <li class="page-item"><a class="page-link" href="?page={{ notifications.next_page_number }}&items_per_page={{ items_per_page }}">›</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ notifications.paginator.num_pages }}&items_per_page={{ items_per_page }}">&raquo;</a></li>
+                        {% endif %}
+                    </ul>
+                  </div>
               </div>
-            </div>
-            {% for notification in notifications %}
-            <div class="btn btn-block btn-xs 
-                {% if notification.notification_type == 'warning' %}
-                    btn-danger
-                {% elif notification.notification_type == 'success' %}
-                    btn-success
-                {% elif notification.notification_type == 'error' %}
-                    btn-warning
-                {% elif notification.notification_type == 'info' %}
-                    btn-primary
-                {% elif notification.notification_type == 'system' %}
-                    btn-secondary
-                {% endif %}">
-                <div class="d-flex justify-content-between align-items-center" style="height: 100%; padding: 5px;">
-                    <div class="custom-control custom-radio" style="text-align: left; border-right: 1px solid rgba(255, 255, 255, 0.3);">
-                        <input class="custom-control-input" type="checkbox" id="customRadio{{ notification.id }}" name="customRadio">
-                        <label for="customRadio{{ notification.id }}" class="custom-control-label"></label>
-                    </div>
-                    <div class="box-section" style="flex: 1; text-align: left;">
-                        <p style="margin: 0; padding-left: 1ch; font-size: 1rem;">
+              {% for notification in notifications %}
+              <div class="btn btn-block btn-xs  
+                  {% if notification.notification_type == 'warning' %}
+                      btn-danger
+                  {% elif notification.notification_type == 'success' %}
+                      btn-success
+                  {% elif notification.notification_type == 'error' %}
+                      btn-warning
+                  {% elif notification.notification_type == 'info' %}
+                      btn-primary
+                  {% elif notification.notification_type == 'system' %}
+                      btn-secondary
+                  {% endif %}
+                  {% if notification.is_read %}
+                  disabled
+                  {% endif %}"
+                  {% if notification.is_read %}
+                  style="cursor: default !important;"
+                  {% endif %}
+                  >
+                      <div class="d-flex justify-content-between align-items-center" style="height: 100%; padding: 5px;">
+                        <div class="custom-control custom-radio" style="text-align: left; border-right: 1px solid rgba(255, 255, 255, 0.3);">
+                          <input class="custom-control-input" type="checkbox" id="customCheck{{ notification.id }}" name="selected_notifications" value="{{ notification.id }}" {% if notification.id in selected_notifications %}checked{% endif %}>
+                          <label for="customCheck{{ notification.id }}" class="custom-control-label"></label>
+                      </div>
+                      <div class="box-section" style="flex: 1; text-align: left;">
+                          <button type="submit" name="notification_id" value="{{ notification.id }}" style="all: unset; display: block; width: 100%; background: none; border: none; padding-left: 1ch; font-size: 1rem;">
                             {{ notification.message }}
-                        </p>
-                    </div>
-                    <div class="box-section" style="flex: 1; text-align: right;">
-                        <p style="margin: 0; padding-left: 1ch; font-size: 1rem; border-right: 1px solid rgba(255, 255, 255, 0.3);">
-                            {{ notification.timestamp|date:"H:i:s | Y-m-d" }}
-                        </p>
-                    </div>
-                </div>
+                          </button>
+                      </div>
+                      <div class="box-section" style="flex-shrink: 0; text-align: right;">
+                          <p style="margin: 0; padding-left: 1ch; font-size: 1rem;">
+                              {{ notification.timestamp|date:"H:i:s | Y-m-d" }}
+                          </p>
+                      </div>
+                  </div>
+              </div>
+             {% endfor %}
             </div>
-        {% endfor %}
-        
-        
           </div>
-        </div>
-      </div><!-- /.container-fluid -->
-    </div>
+        </div><!-- /.container-fluid -->
+      </div>
+    </form> 
   </div>
   <!-- /.content-wrapper -->
 

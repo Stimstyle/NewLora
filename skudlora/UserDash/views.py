@@ -36,12 +36,12 @@ def index(request):
                 
                 # Создаем уведомление
                 Notification.objects.create(
-                    message=f"Открытие двери по адресу {device.address} пользователем {request.user.username} в {current_time.strftime('%Y-%m-%d %H:%M:%S')}",
+                    message=f"Открытие двери по адресу {device.address} пользователем {request.user.username}",
                     user=request.user,
                     address=device.address,
                     dev_eui=dev_eui,  # Добавляем DevEUI в уведомление
                     is_read=False,  # Статус уведомления - непрочитано
-                    notification_type='system'  # Тип уведомления
+                    notification_type='warning'  # Тип уведомления
                 )
                 print(f"Уведомление создано для устройства {device.device_name}")
             except DeviceData.DoesNotExist:
@@ -152,12 +152,69 @@ def devices(request):
 
 
 
+from django.core.paginator import Paginator
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+
 @login_required
 def notification(request):
     # Получаем все уведомления, отсортированные по времени (от новых к старым)
     notifications = Notification.objects.all().order_by('-timestamp')
 
-    return render(request, 'notification.html', {
-        'notifications': notifications
-    })
+    notification_type = None  # Инициализируем переменную для типа уведомлений
+    items_per_page = int(request.POST.get('items_per_page', 25))  # Количество элементов на странице (по умолчанию 25)
 
+    # Проверяем, был ли отправлен запрос методом POST
+    if request.method == "POST":
+        # Получаем тип уведомлений из POST-запроса
+        notification_type = request.POST.get('notification_type', None)
+
+        # Если выбран тип уведомлений, фильтруем их
+        if notification_type:
+            notifications = notifications.filter(notification_type=notification_type)
+
+        # Получаем список выбранных уведомлений
+        selected_notifications = request.POST.getlist('selected_notifications')
+
+        # Если была нажата кнопка "Выбрать все уведомления"
+        if 'select_all' in request.POST:
+            selected_notifications = [notification.id for notification in notifications]
+
+        # Если была нажата кнопка "Удалить"
+        if 'delete_selected' in request.POST:
+            Notification.objects.filter(id__in=selected_notifications).delete()
+            return redirect('notification')
+        
+        # Если была нажата кнопка "Отметить как прочитано"
+        if 'mark_as_read' in request.POST:
+            Notification.objects.filter(id__in=selected_notifications).update(is_read=True)
+
+        # Если была нажата кнопка для одного уведомления
+        if 'notification_id' in request.POST:
+            notification_id = request.POST.get('notification_id')
+            notification = Notification.objects.get(id=notification_id)
+            notification.is_read = True
+            notification.save()
+
+        # Сохраняем выбранные уведомления в сессии
+        request.session['selected_notifications'] = selected_notifications
+
+    else:
+        # Если форма не была отправлена, получаем тип уведомлений из GET-запроса
+        notification_type = request.GET.get('notification_type', None)
+
+    # Создаем пагинатор с количеством элементов на странице
+    paginator = Paginator(notifications, items_per_page)
+    page_number = request.GET.get('page')  # Номер текущей страницы
+    page_obj = paginator.get_page(page_number)
+
+    # Получаем из сессии список выбранных уведомлений
+    selected_notifications = request.session.get('selected_notifications', [])
+
+    return render(request, 'notification.html', {
+        'notifications': page_obj,
+        'selected_notifications': selected_notifications,
+        'notification_type': notification_type,  # Передаем выбранный тип уведомлений в шаблон
+        'items_per_page': items_per_page,  # Передаем выбранное количество элементов на страницу
+        'page_range': page_obj.paginator.page_range  # Диапазон страниц для пагинации
+    })
