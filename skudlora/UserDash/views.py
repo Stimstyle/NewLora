@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect
 from post_receiver.models import DeviceData, APIKey
+from UserDash.models import Notification
 from datetime import timedelta
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import Q  # Для фильтрации
+from django.contrib.auth.decorators import login_required
 
-
-
+@login_required
 def index(request):
     query = request.GET.get('search', '')  # Получаем значение из строки поиска
     devices = DeviceData.objects.filter(
@@ -25,6 +26,29 @@ def index(request):
     total_devices = devices.count()
     offline_count = total_devices - online_count  # Количество оффлайн-устройств
 
+    if request.method == "POST":
+        dev_eui = request.POST.get('dev_eui')  # Получаем DevEUI из формы
+        current_time = timezone.now()  # Получаем текущее время сервера
+        if dev_eui:
+            try:
+                # Получаем устройство по DevEUI
+                device = DeviceData.objects.get(dev_eui=dev_eui)
+                
+                # Создаем уведомление
+                Notification.objects.create(
+                    message=f"Открытие двери по адресу {device.address} пользователем {request.user.username} в {current_time.strftime('%Y-%m-%d %H:%M:%S')}",
+                    user=request.user,
+                    address=device.address,
+                    dev_eui=dev_eui,  # Добавляем DevEUI в уведомление
+                    is_read=False,  # Статус уведомления - непрочитано
+                    notification_type='system'  # Тип уведомления
+                )
+                print(f"Уведомление создано для устройства {device.device_name}")
+            except DeviceData.DoesNotExist:
+                print(f"Устройство с DevEUI {dev_eui} не найдено")
+
+
+
     print(f"Текущее время: {current_time}")
     for device in devices:
         print(f"Время устройства {device.device_name}: {device.time}, Статус: {device.status}")
@@ -40,7 +64,7 @@ def index(request):
         'offline_count': offline_count  # Количество оффлайн-устройств
     })
 
-
+@login_required
 def devices(request):
     # Логика поиска (если нужно)
     query = request.GET.get('search', '')
@@ -125,3 +149,15 @@ def devices(request):
         'search_query': query, 
         'api_keys': api_keys,  # Для отображения API ключей в форме
     })
+
+
+
+@login_required
+def notification(request):
+    # Получаем все уведомления, отсортированные по времени (от новых к старым)
+    notifications = Notification.objects.all().order_by('-timestamp')
+
+    return render(request, 'notification.html', {
+        'notifications': notifications
+    })
+

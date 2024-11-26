@@ -116,7 +116,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
             </a>
           </li>
           <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="{% url 'notification' %}" class="nav-link">
               <i class="fas fa-bell"></i>
               <p>
                 Оповещения
@@ -257,7 +257,13 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             {% endif %}
                           {% endwith %}
                         </td>
-                        <td><button class="btn btn-primary btn-sm" style="background-color: #007bff;">Открыть</button></td>
+                          <td>
+                              <form method="post" action="">
+                              {% csrf_token %}
+                              <input type="hidden" name="dev_eui" value="{{ device.dev_eui }}">  
+                              <button class="btn btn-primary btn-sm" style="background-color: #007bff;">Открыть</button>
+                            </form>
+                          </td>
                         <td>
                           {% if device.status == "Онлайн" %}
                             <i class="fas fa-circle text-success" style="transform: translate(0%, 20%);"></i>
