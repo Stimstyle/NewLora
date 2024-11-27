@@ -78,7 +78,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
       <div class="user-panel mt-2 pb-2 mb-3 d-flex">
         <div class="w-100 d-flex justify-content-between align-items-center">
-          <a href="#" class="d-inline-block text-shadow">&nbsp&nbsp "ТСЖ" номер №1</a>
+          <a href="#" class="d-inline-block text-shadow">&nbsp&nbsp{{ request.user.username }}</a>
           <button class="btn btn-link p-1">
             <i class="fas fa-sign-out-alt"></i>
           </button>
@@ -121,6 +121,14 @@ scratch. This page gets rid of all links and provides the needed markup only.
               <i class="fas fa-bell"></i>
               <p>
                 Оповещения
+              </p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'groups' %}" class="nav-link">
+              <i class="fas fa-city"></i>
+              <p>
+                Группирование
               </p>
             </a>
           </li>
@@ -257,50 +265,50 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             <form method="post">
                                 {% csrf_token %}
                                 <div class="card-body">
-                                <div class="form-group">
-                                    <label for="InputPassword">Пароль</label>
-                                    <input type="text" class="form-control" id="InputPassword" name="device_name" 
-                                    placeholder="Введите пароль" 
-                                    required 
-                                    pattern="^[0-9A-Fa-f]+$" 
-                                    title="Пароль должен содержать только HEX символы (0-9, A-F)">
-                                </div>
-                                <div class="form-group">
-                                    <label for="InputDevEUI">DevEUI</label>
-                                    <input type="text" class="form-control" id="InputDevEUI" name="dev_eui" 
-                                           placeholder="Введите DevEUI" 
-                                           required 
-                                           pattern="^[0-9A-Fa-f]+$" 
-                                           title="DevEUI должен содержать только HEX символы (0-9, A-F, a-f)">
-                                </div>
-                                <div class="form-group">
-                                    <label>Тип устройства</label>
-                                    <select class="custom-select" name="device_class">
-                                    <option value="" disabled selected>Выберите тип устройства</option>  <!-- Пустая опция по умолчанию -->
-                                    <option value="NbIot">NbIot</option>
-                                    <option value="LoRaWAN">LoRaWAN</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>API Ключ</label>
-                                      <select class="custom-select" name="api_key">
-                                        <option value="" disabled selected>Выберите API ключ</option>  <!-- Пустая опция по умолчанию -->
-                                        {% for key in api_keys %}
-                                        <option value="{{ key.id }}">{{ key.provider_name }} - {{ key.key_name }}</option>
-                                        {% endfor %}
+                                  <div class="form-group">
+                                      <label for="InputPassword">Пароль</label>
+                                      <input type="text" class="form-control" id="InputPassword" name="device_name" 
+                                      placeholder="Введите пароль" 
+                                      required 
+                                      pattern="^[0-9A-Fa-f]+$" 
+                                      title="Пароль должен содержать только HEX символы (0-9, A-F)">
+                                  </div>
+                                  <div class="form-group">
+                                      <label for="InputDevEUI">DevEUI</label>
+                                      <input type="text" class="form-control" id="InputDevEUI" name="dev_eui" 
+                                            placeholder="Введите DevEUI" 
+                                            required 
+                                            pattern="^[0-9A-Fa-f]+$" 
+                                            title="DevEUI должен содержать только HEX символы (0-9, A-F, a-f)">
+                                  </div>
+                                  <div class="form-group">
+                                      <label>Тип устройства</label>
+                                      <select class="custom-select" name="device_class">
+                                      <option value="" disabled selected>Выберите тип устройства</option>  <!-- Пустая опция по умолчанию -->
+                                      <option value="NbIot">NbIot</option>
+                                      <option value="LoRaWAN">LoRaWAN</option>
                                       </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Адрес установки</label>
-                                    <textarea class="form-control" name="address" rows="3" placeholder="Введите адрес установки" required></textarea>
-                                </div>
-                                <div class="form-group">
-                                    <label>Описание</label>
-                                    <textarea class="form-control" name="description" rows="3" placeholder="Введите описание"></textarea>
-                                </div> 
-                                </div>
-                                <div class="card-footer">
-                                <button type="submit" class="btn btn-primary">Добавить</button>
+                                  </div>
+                                  <div class="form-group">
+                                      <label>API Ключ</label>
+                                        <select class="custom-select" name="api_key">
+                                          <option value="" disabled selected>Выберите API ключ</option>  <!-- Пустая опция по умолчанию -->
+                                          {% for key in api_keys %}
+                                          <option value="{{ key.id }}">{{ key.provider_name }} - {{ key.key_name }}</option>
+                                          {% endfor %}
+                                        </select>
+                                  </div>
+                                  <div class="form-group">
+                                      <label>Адрес установки</label>
+                                      <textarea class="form-control" name="address" rows="3" placeholder="Введите адрес установки" required></textarea>
+                                  </div>
+                                  <div class="form-group">
+                                      <label>Описание</label>
+                                      <textarea class="form-control" name="description" rows="3" placeholder="Введите описание"></textarea>
+                                  </div> 
+                                  </div>
+                                  <div class="card-footer">
+                                  <button type="submit" class="btn btn-primary">Добавить</button>
                                 </div>
                             </form>
                       </div>
@@ -471,9 +479,40 @@ scratch. This page gets rid of all links and provides the needed markup only.
   <aside class="control-sidebar control-sidebar-dark">
     <!-- Control sidebar content goes here -->
     <div class="p-3">
-      <h5>Уведомления</h5>
+        <h5>Уведомления</h5>
     </div>
-  </aside>
+    <div class="content">
+        <div class="container-fluid">
+            {% get_unread_notifications request.user as unread_notifications %}
+            {% for notification in unread_notifications|slice:":30" %}
+                {% if notification.notification_type in "warning success error" %}
+                    <div class="btn btn-block btn-xs
+                        {% if notification.notification_type == 'warning' %}btn-danger
+                        {% elif notification.notification_type == 'success' %}btn-success
+                        {% elif notification.notification_type == 'error' %}btn-warning
+                        {% endif %}
+                        {% if notification.is_read %} disabled style="cursor: default !important;" {% endif %}">
+                        <div class="d-flex justify-content-between align-items-center" style="height: 100%; padding: 2px;">
+                            <div class="box-section" style="flex: 1; text-align: left;">
+                                <button type="submit" name="notification_id" value="{{ notification.id }}" style="all: unset; display: block; width: 100%; background: none; border: none; padding-left: 1ch; font-size: 1rem;">
+                                    {{ notification.message }}
+                                </button>
+                            </div>
+                            <div class="box-section" style="flex-shrink: 0; text-align: right;">
+                                <p style="margin: 0; padding-left: 1ch; font-size: 1rem;">
+                                    {{ notification.timestamp|date:"H:i:s" }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% empty %}
+                <p>Нет уведомлений.</p>
+            {% endfor %}
+        </div>
+    </div>
+</aside>
+
   <!-- /.control-sidebar -->
 
   <!-- Main Footer -->

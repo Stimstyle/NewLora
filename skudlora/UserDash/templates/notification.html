@@ -53,13 +53,6 @@ scratch. This page gets rid of all links and provides the needed markup only.
           <i class="fas fa-expand-arrows-alt"></i>
         </a>
       </li>
-      <li class="nav-item">
-        {% load custom_tags %}
-        <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">
-          <i class="far fa-bell"></i>
-          <span class="badge badge-warning navbar-badge ml-3" style="transform: translate(20%, -20%);">{% unread_notifications_count request.user %}</span>
-        </a>
-      </li>
     </ul>
   </nav>
   <!-- /.navbar -->
@@ -78,7 +71,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
       <div class="user-panel mt-2 pb-2 mb-3 d-flex">
         <div class="w-100 d-flex justify-content-between align-items-center">
-          <a href="#" class="d-inline-block text-shadow">&nbsp&nbsp "ТСЖ" номер №1</a>
+          <a href="#" class="d-inline-block text-shadow">&nbsp&nbsp{{ request.user.username }}</a>
           <button class="btn btn-link p-1">
             <i class="fas fa-sign-out-alt"></i>
           </button>
@@ -121,6 +114,14 @@ scratch. This page gets rid of all links and provides the needed markup only.
               <i class="fas fa-bell"></i>
               <p>
                 Оповещения
+              </p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'groups' %}" class="nav-link">
+              <i class="fas fa-city"></i>
+              <p>
+                Группирование
               </p>
             </a>
           </li>
@@ -227,6 +228,9 @@ scratch. This page gets rid of all links and provides the needed markup only.
                     </div>
                     <div class="col-auto mt-3 mt-md-0">
                       <button type="submit" class="btn btn-warning" name="select_all" value="true">Выбрать все уведомления</button>
+                    </div>
+                    <div class="col-auto mt-3 mt-md-0">
+                      <button type="submit" class="btn btn-warning" name="select_all" value="false">Снять все отметки</button>
                     </div>
                     <div class="col-auto mt-3 mt-md-0">
                       <button type="submit" class="btn btn-warning" name="mark_as_read">Отметить как прочитано</button>

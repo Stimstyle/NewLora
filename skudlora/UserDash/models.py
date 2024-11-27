@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from post_receiver.models import DeviceData
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
@@ -20,3 +21,13 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.get_notification_type_display()} - {self.message} ({self.timestamp})"
+
+class DeviceGroup(models.Model):
+    group_name = models.CharField(max_length=255, verbose_name="Название группы")
+    address = models.TextField(verbose_name="Адрес группы", null=False)
+    latitude = models.FloatField(null=True, blank=True, verbose_name="Широта группы")
+    longitude = models.FloatField(null=True, blank=True, verbose_name="Долгота группы")
+    devices = models.ManyToManyField(DeviceData, related_name="device_groups", verbose_name="Устройства")
+
+    def __str__(self):
+        return self.group_name

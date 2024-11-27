@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<!--
+This is a starter template page. Use this page to start your new project from
+scratch. This page gets rid of all links and provides the needed markup only.
+-->
+{% load static %}
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>.S.E.L.I.K.O. - главная страница</title>
+  <link rel="icon" href="{% static 'icon/dashuser.ico' %}" type="image/x-icon">
+  <link rel="shortcut icon" href="{% static 'icon/dashuser.ico' %}" type="image/x-icon">
+  <!-- Google Font: Source Sans Pro -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+  <link rel="stylesheet" href="{% static 'dist/css/adminlte.css' %}">
+  <link rel="stylesheet" href="{% static 'plugins/bootstrap4-duallistbox/bootstrap-duallistbox.css' %}">
+  <script src="https://code.iconify.design/2/2.0.3/iconify.min.js"></script>
+
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand navbar-dark navbar-light">
+    <!-- Left navbar links -->
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="#" class="nav-link">Контакты</a>
+      </li>
+    </ul>
+
+    <!-- Right navbar links -->
+    <ul class="navbar-nav ml-auto">
+      <!-- Navbar Search -->
+
+      <!-- Messages Dropdown Menu -->
+
+      <!-- Кнопка для переключения режима -->
+      <li class="nav-item">
+        <a class="nav-link" data-widget="dark-mode" href="#" role="button">
+          <i class="fas fa-moon" id="dark-mode-icon"></i> <!-- Иконка ночного режима -->
+          <i class="fas fa-sun" id="light-mode-icon" style="display: none;"></i> <!-- Иконка дневного режима -->
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" data-widget="fullscreen" href="#" role="button">
+          <i class="fas fa-expand-arrows-alt"></i>
+        </a>
+      </li>
+      <li class="nav-item">
+        {% load custom_tags %}
+        <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">
+          <i class="far fa-bell"></i>
+          <span class="badge badge-warning navbar-badge ml-3" style="transform: translate(20%, -20%);">{% unread_notifications_count request.user %}</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <!-- /.navbar -->
+
+  <!-- Main Sidebar Container -->
+  <aside class="main-sidebar sidebar-dark-primary elevation-4 " >
+    <!-- Brand Logo -->
+    <div class="brand-link" style="background-color: #3498db;">
+      <img src="{% static 'books/img/OnPhone.png' %}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+      <span class="brand-text font-weight-normal">.S.E.L.I.K.O.</span>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- SidebarSearch Form -->
+
+      <div class="user-panel mt-2 pb-2 mb-3 d-flex">
+        <div class="w-100 d-flex justify-content-between align-items-center">
+          <a href="#" class="d-inline-block text-shadow">&nbsp&nbsp{{ request.user.username }}</a>
+          <button class="btn btn-link p-1">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+      </div>
+
+      
+
+      <!-- Sidebar Menu -->
+      <nav class="mt-2">
+        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+          <!-- Add icons to the links using the .nav-icon class
+           
+               with font-awesome or any other icon font library -->
+          <li class="nav-item">
+            <a href="{% url 'index' %}" class="nav-link">
+              <i class="fas fa-tachometer-alt"></i>
+              <p>
+                Главная
+              </p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'devices' %}" class="nav-link">
+              <i class="fas fa-broadcast-tower"></i>
+              <p>
+                Устройства
+              </p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link">
+              <i class="far fa-envelope"></i>
+              <p>
+                Почта
+              </p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'notification' %}" class="nav-link">
+              <i class="fas fa-bell"></i>
+              <p>
+                Оповещения
+              </p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'groups' %}" class="nav-link active">
+              <i class="nav-icon fas fa-city"></i>
+              <p>
+                Группирование
+              </p>
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <!-- /.sidebar-menu -->
+    </div>
+    <!-- /.sidebar -->
+  </aside>
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                    <h1>Группирование</h1>
+                    </div>
+                    <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="#">Home</a></li>
+                        <li class="breadcrumb-item active">Группирование</li>
+                    </ol>
+                    </div>
+                </div>
+            </div><!-- /.container-fluid -->
+      </section>
+    <div class="content">
+      <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Объединение устройств в группу</h3>
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="InputName">Имя группы</label>
+                                <input type="text" class="form-control" id="InputName" name="device_name" 
+                                    placeholder="Введите имя группы">
+                            </div>
+                            <div class="form-group">
+                                <label for="InputDevEUI">Адрес установки</label>
+                                <input type="text" class="form-control" id="InputDevEUI" name="dev_eui" 
+                                    placeholder="Введите адрес установки">
+                            </div>
+                            <div class="form-group">
+                                <label for="InputDevEUI">Широта</label>
+                                <input type="text" class="form-control" id="InputDevEUI" name="dev_eui" 
+                                    placeholder="Введите широту">
+                            </div>
+                            <div class="form-group">
+                                <label for="InputDevEUI">Долгота</label>
+                                <input type="text" class="form-control" id="InputDevEUI" name="dev_eui" 
+                                    placeholder="Введите долготу">
+                            </div>
+                            <div class="card card-default">
+                                <div class="card-header">
+                                    <h3 class="card-title">Список устройств</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool btn-primary" data-card-widget="collapse">
+                                          <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-tool btn-danger" data-card-widget="remove">
+                                          <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                        <div class="form-group">
+                                            <select class="duallistbox" id="deviceList" multiple="multiple">
+                                                {% for device in devices %}
+                                                    <option value="{{ device.dev_eui }}">{{ device.dev_eui }} - {{ device.address }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /.content-wrapper -->
+  <!-- Control Sidebar -->
+
+  {% load custom_tags %}
+  <aside class="control-sidebar control-sidebar-dark">
+      <!-- Control sidebar content goes here -->
+      <div class="p-3">
+          <h5>Уведомления</h5>
+      </div>
+      <div class="content">
+        <div class="container-fluid">
+                    {% get_unread_notifications request.user as unread_notifications %}
+                    {% for notification in unread_notifications|slice:":20" %}
+                    <div class="btn btn-block btn-xs 
+                      {% if notification.notification_type == 'warning' %}btn-danger
+                      {% elif notification.notification_type == 'success' %}btn-success
+                      {% elif notification.notification_type == 'error' %}btn-warning
+                      {% elif notification.notification_type == 'info' %}btn-primary
+                      {% elif notification.notification_type == 'system' %}btn-secondary
+                      {% endif %}
+                      {% if notification.is_read %} disabled style="cursor: default !important;" {% endif %}">
+                      <div class="d-flex justify-content-between align-items-center" style="height: 100%; padding: 2px;">
+                        <div class="box-section" style="flex: 1; text-align: left;">
+                          <button type="submit" name="notification_id" value="{{ notification.id }}" style="all: unset; display: block; width: 100%; background: none; border: none; padding-left: 1ch; font-size: 0.8rem;">
+                              {{ notification.message }}
+                          </button>
+                        </div>
+                        <div class="box-section" style="flex-shrink: 0; text-align: right;">
+                            <p style="margin: 0; padding-left: 1ch; font-size: 0.8rem;">
+                              {{ notification.timestamp|date:"H:i:s" }}
+                          </p>
+                        </div>
+                      </div>
+                  </div>
+            {% empty %}
+                <p>Нет уведомлений.</p>
+            {% endfor %}
+        </div>
+      </div>
+  </aside>
+  
+  
+  
+  <!-- /.control-sidebar -->
+
+  <!-- Main Footer -->
+  <footer class="main-footer">
+    <!-- To the right -->
+    <!-- Default to the left -->
+    <strong><a href="#">ООО "Пэск"</a>.</strong> Все права защищены.
+  </footer>
+</div>
+<!-- ./wrapper -->
+
+<!-- REQUIRED SCRIPTS -->
+
+<!-- jQuery -->
+<script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+<script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'dist/js/adminlte.min.js' %}"></script>
+<script src="{% static 'plugins/Amyscript/moonsun.js' %}"></script>
+<script src="{% static 'plugins/bootstrap4-duallistbox/jquery.bootstrap-duallistbox.js' %}"></script>
+<script>
+    $(function () {
+      $('.duallistbox').bootstrapDualListbox();
+    });
+  </script>
+
+</body>
+</html>

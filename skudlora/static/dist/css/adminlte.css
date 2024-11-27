@@ -15119,10 +15119,20 @@ html.control-sidebar-animate {
 .control-sidebar, .control-sidebar::before {
   bottom: calc(3.5rem + 1px);
   display: none;
-  right: -500px;
-  width: 500px;
+  right: -700px;
+  width: 700px;
   transition: right 0.3s ease-in-out, display 0.3s ease-in-out;
 }
+
+/* Стили для мобильных устройств */
+@media (max-width: 768px) {
+  .control-sidebar, .control-sidebar::before {
+    width: 100vw; /* Ширина 100% от ширины экрана */
+    right: -100vw; /* Скрыто за экраном */
+    display: block; /* Показываем при необходимости */
+  }
+}
+
 
 @media (prefers-reduced-motion: reduce) {
   .control-sidebar, .control-sidebar::before {

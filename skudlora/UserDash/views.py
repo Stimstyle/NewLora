@@ -164,16 +164,24 @@ def notification(request):
     notifications = Notification.objects.all().order_by('-timestamp')
 
     notification_type = None  # Инициализируем переменную для типа уведомлений
-    # Попробуем получить выбранное пользователем значение или использовать 25 по умолчанию
-    items_per_page = int(request.POST.get('items_per_page', request.session.get('items_per_page', 25)))
+    
+    # Получаем значение для items_per_page, если оно задано, или 25 по умолчанию
+    items_per_page = request.POST.get('items_per_page', request.session.get('items_per_page', 25))
+    
+    # Проверяем, что items_per_page - это число, если нет, используем 25
+    try:
+        items_per_page = int(items_per_page)
+    except ValueError:
+        items_per_page = 25
 
     # Если значение items_per_page было отправлено, сохраняем его в сессии для будущих запросов
     request.session['items_per_page'] = items_per_page
+
     # Инициализация фильтра по времени
     time_range = request.POST.get('time_range', 'all')  # Значение по умолчанию - "всё время"
 
     # Фильтрация уведомлений по времени
-    current_time = timezone.now() + timedelta(days=1)
+    current_time = timezone.now()
     if time_range == 'day':
         notifications = notifications.filter(timestamp__gte=current_time - timedelta(days=1))
     elif time_range == 'week':
@@ -191,17 +199,27 @@ def notification(request):
 
         selected_notifications = request.POST.getlist('selected_notifications')
         if 'select_all' in request.POST:
-            selected_notifications = [notification.id for notification in notifications]
+            if request.POST['select_all'] == 'true':
+                # Выбрать все уведомления
+                selected_notifications = [notification.id for notification in notifications]
+            elif request.POST['select_all'] == 'false':
+                # Отменить все уведомления
+                selected_notifications = []
+        
         if 'delete_selected' in request.POST:
+            # Удаляем выбранные уведомления
             Notification.objects.filter(id__in=selected_notifications).delete()
             return redirect('notification')
         if 'mark_as_read' in request.POST:
+            # Отмечаем выбранные уведомления как прочитанные
             Notification.objects.filter(id__in=selected_notifications).update(is_read=True)
         if 'notification_id' in request.POST:
             notification_id = request.POST.get('notification_id')
             notification = Notification.objects.get(id=notification_id)
             notification.is_read = True
             notification.save()
+
+        # Сохраняем список выбранных уведомлений в сессии
         request.session['selected_notifications'] = selected_notifications
 
     paginator = Paginator(notifications, items_per_page)
@@ -218,10 +236,8 @@ def notification(request):
         'page_range': page_obj.paginator.page_range,
     })
 
-
 @login_required
-def another_view(request):
-    unread_notifications_count = get_unread_notifications_count(request.user)
-    return render(request, 'another_template.html', {
-        'unread_notifications_count': unread_notifications_count,
-    })
+def groups(request):
+    # Получаем все устройства
+    devices = DeviceData.objects.all()
+    return render(request, 'groups.html', {'devices': devices})

@@ -78,7 +78,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
       <div class="user-panel mt-2 pb-2 mb-3 d-flex">
         <div class="w-100 d-flex justify-content-between align-items-center">
-          <a href="#" class="d-inline-block text-shadow">&nbsp&nbsp "ТСЖ" номер №1</a>
+          <a href="#" class="d-inline-block text-shadow">&nbsp&nbsp{{ request.user.username }}</a>
           <button class="btn btn-link p-1">
             <i class="fas fa-sign-out-alt"></i>
           </button>
@@ -91,6 +91,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
           <!-- Add icons to the links using the .nav-icon class
+           
                with font-awesome or any other icon font library -->
           <li class="nav-item">
             <a href="{% url 'index' %}" class="nav-link active">
@@ -121,6 +122,14 @@ scratch. This page gets rid of all links and provides the needed markup only.
               <i class="fas fa-bell"></i>
               <p>
                 Оповещения
+              </p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'groups' %}" class="nav-link">
+              <i class="fas fa-city"></i>
+              <p>
+                Группирование
               </p>
             </a>
           </li>
@@ -204,13 +213,24 @@ scratch. This page gets rid of all links and provides the needed markup only.
             <!-- small box -->
             <div class="small-box bg-danger">
               <div class="inner">
-                <h3>{% warning_notifications_count request.user %}</h3>
-                <p>ПРЕДУПРЕЖДЕНИЯ</p>
+                  <h3>{% warning_notifications_count request.user %}</h3>
+                  <p>ПРЕДУПРЕЖДЕНИЯ</p>
               </div>
               <div class="icon">
-                <span class="iconify" data-icon="mingcute:alert-fill" data-inline="false"></span>
+                  <span class="iconify" data-icon="mingcute:alert-fill" data-inline="false"></span>
               </div>
-              <a href="{% url 'notification' %}" class="small-box-footer">Открыть страницу <i class="fas fa-arrow-circle-right"></i></a>
+              <div href="#" class="small-box-footer">
+                <form method="post" action="{% url 'notification' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <!-- Скрытые поля для передачи параметров -->
+                    <input type="hidden" name="notification_type" value="warning">
+                    <input type="hidden" name="time_range" value="{{ request.GET.time_range }}">
+                    <input type="hidden" name="items_per_page" value="{{ request.GET.items_per_page }}">
+                    <button style="border: none; background: none; width: 100%; color: #fff; line-height: 1;">
+                      Открыть страницу <i class="fas fa-arrow-circle-right"></i>
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
           <!-- ./col -->
@@ -307,14 +327,48 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <!-- /.content -->
   </div>
   <!-- /.content-wrapper -->
-
   <!-- Control Sidebar -->
+  {% load custom_tags %}
+
   <aside class="control-sidebar control-sidebar-dark">
-    <!-- Control sidebar content goes here -->
-    <div class="p-3">
-      <h5>Уведомления</h5>
-    </div>
+      <!-- Control sidebar content goes here -->
+      <div class="p-3">
+          <h5>Уведомления</h5>
+      </div>
+      <div class="content">
+        <div class="container-fluid">
+                    {% get_unread_notifications request.user as unread_notifications %}
+                    {% for notification in unread_notifications|slice:":20" %}
+                    <div class="btn btn-block btn-xs 
+                      {% if notification.notification_type == 'warning' %}btn-danger
+                      {% elif notification.notification_type == 'success' %}btn-success
+                      {% elif notification.notification_type == 'error' %}btn-warning
+                      {% elif notification.notification_type == 'info' %}btn-primary
+                      {% elif notification.notification_type == 'system' %}btn-secondary
+                      {% endif %}
+                      {% if notification.is_read %} disabled style="cursor: default !important;" {% endif %}">
+                      <div class="d-flex justify-content-between align-items-center" style="height: 100%; padding: 2px;">
+                        <div class="box-section" style="flex: 1; text-align: left;">
+                          <button type="submit" name="notification_id" value="{{ notification.id }}" style="all: unset; display: block; width: 100%; background: none; border: none; padding-left: 1ch; font-size: 0.8rem;">
+                              {{ notification.message }}
+                          </button>
+                        </div>
+                        <div class="box-section" style="flex-shrink: 0; text-align: right;">
+                            <p style="margin: 0; padding-left: 1ch; font-size: 0.8rem;">
+                              {{ notification.timestamp|date:"H:i:s" }}
+                          </p>
+                        </div>
+                      </div>
+                  </div>
+            {% empty %}
+                <p>Нет уведомлений.</p>
+            {% endfor %}
+        </div>
+      </div>
   </aside>
+  
+  
+  
   <!-- /.control-sidebar -->
 
   <!-- Main Footer -->

@@ -28,38 +28,38 @@
 }(function($) {
   // Create the defaults once
   var pluginName = 'bootstrapDualListbox',
-    defaults = {
-      filterTextClear: 'show all',
-      filterPlaceHolder: 'Filter',
-      moveSelectedLabel: 'Move selected',
-      moveAllLabel: 'Move all',
-      removeSelectedLabel: 'Remove selected',
-      removeAllLabel: 'Remove all',
-      moveOnSelect: true,                                                                 // true/false (forced true on androids, see the comment later)
-      moveOnDoubleClick: true,                                                            // true/false (forced false on androids, cause moveOnSelect is forced to true)
-      preserveSelectionOnMove: false,                                                     // 'all' / 'moved' / false
-      selectedListLabel: false,                                                           // 'string', false
-      nonSelectedListLabel: false,                                                        // 'string', false
-      helperSelectNamePostfix: '_helper',                                                 // 'string_of_postfix' / false
-      selectorMinimalHeight: 100,
-      showFilterInputs: true,                                                             // whether to show filter inputs
-      nonSelectedFilter: '',                                                              // string, filter the non selected options
-      selectedFilter: '',                                                                 // string, filter the selected options
-      infoText: 'Showing all {0}',                                                        // text when all options are visible / false for no info text
-      infoTextFiltered: '<span class="badge badge-warning">Filtered</span> {0} from {1}', // when not all of the options are visible due to the filter
-      infoTextEmpty: 'Empty list',                                                        // when there are no options present in the list
-      filterOnValues: false,                                                              // filter by selector's values, boolean
-      sortByInputOrder: false,
-      eventMoveOverride: false,                                                           // boolean, allows user to unbind default event behaviour and run their own instead
-      eventMoveAllOverride: false,                                                        // boolean, allows user to unbind default event behaviour and run their own instead
-      eventRemoveOverride: false,                                                         // boolean, allows user to unbind default event behaviour and run their own instead
-      eventRemoveAllOverride: false,                                                      // boolean, allows user to unbind default event behaviour and run their own instead
-      btnClass: 'btn-outline-secondary',                                                  // sets the button style class for all the buttons
-      btnMoveText: '&gt;',                                                                // string, sets the text for the "Move" button
-      btnRemoveText: '&lt;',                                                              // string, sets the text for the "Remove" button
-      btnMoveAllText: '&gt;&gt;',                                                         // string, sets the text for the "Move All" button
-      btnRemoveAllText: '&lt;&lt;'                                                        // string, sets the text for the "Remove All" button
-    },
+  defaults = {
+    filterTextClear: 'показать все',         // Текст для кнопки очистки фильтра
+    filterPlaceHolder: 'Фильтровать',       // Текст в поле ввода фильтра
+    moveSelectedLabel: 'Переместить выбранные',  // Текст для кнопки "Переместить выбранные"
+    moveAllLabel: 'Переместить все',        // Текст для кнопки "Переместить все"
+    removeSelectedLabel: 'Удалить выбранные',   // Текст для кнопки "Удалить выбранные"
+    removeAllLabel: 'Удалить все',          // Текст для кнопки "Удалить все"
+    moveOnSelect: true,                     // true/false (обязательно true на андроидах, см. комментарий ниже)
+    moveOnDoubleClick: true,                // true/false (обязательно false на андроидах, так как moveOnSelect принудительно включен)
+    preserveSelectionOnMove: false,         // 'all' / 'moved' / false (сохранить выделение после перемещения)
+    selectedListLabel: false,               // 'строка', false (подпись для списка выбранных)
+    nonSelectedListLabel: false,            // 'строка', false (подпись для списка невыбранных)
+    helperSelectNamePostfix: '_helper',     // 'строка_постфикса' / false (постфикс для имени поля выбора)
+    selectorMinimalHeight: 200,             // минимальная высота для селектора
+    showFilterInputs: true,                 // отображать ли поля ввода для фильтрации
+    nonSelectedFilter: '',                  // строка, фильтровать невыбранные элементы
+    selectedFilter: '',                     // строка, фильтровать выбранные элементы
+    infoText: 'Показаны все {0}',           // текст, когда видны все элементы / false для отсутствия текста
+    infoTextFiltered: '<span class="badge badge-warning">Отфильтровано</span> {0} из {1}', // текст при фильтрации
+    infoTextEmpty: 'Пустой список',         // текст, когда список пуст
+    filterOnValues: false,                  // фильтровать по значениям селектора, boolean
+    sortByInputOrder: false,                // сортировать по порядку ввода
+    eventMoveOverride: false,               // boolean, позволяет переопределить стандартное поведение событий перемещения
+    eventMoveAllOverride: false,            // boolean, позволяет переопределить стандартное поведение событий перемещения всех
+    eventRemoveOverride: false,             // boolean, позволяет переопределить стандартное поведение событий удаления
+    eventRemoveAllOverride: false,          // boolean, позволяет переопределить стандартное поведение событий удаления всех
+    btnClass: 'btn-outline-secondary',      // класс для кнопок
+    btnMoveText: '&gt;',                    // текст для кнопки "Переместить"
+    btnRemoveText: '&lt;',                  // текст для кнопки "Удалить"
+    btnMoveAllText: '&gt;&gt;',             // текст для кнопки "Переместить все"
+    btnRemoveAllText: '&lt;&lt;'            // текст для кнопки "Удалить все"
+  },
     // Selections are invisible on android if the containing select is styled with CSS
     // http://code.google.com/p/android/issues/detail?id=16922
     isBuggyAndroid = /android/i.test(navigator.userAgent.toLowerCase());
