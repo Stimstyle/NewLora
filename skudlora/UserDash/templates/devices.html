@@ -124,6 +124,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
               </p>
             </a>
           </li>
+          {% if request.user.is_superuser or request.user.is_staff %} 
           <li class="nav-item">
             <a href="{% url 'groups' %}" class="nav-link">
               <i class="fas fa-city"></i>
@@ -132,6 +133,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
               </p>
             </a>
           </li>
+          {% endif %}
         </ul>
       </nav>
       <!-- /.sidebar-menu -->
@@ -168,9 +170,11 @@ scratch. This page gets rid of all links and provides the needed markup only.
                 <li class="nav-item">
                   <a class="nav-link active" id="custom-content-below-home-tab" data-toggle="pill" href="#custom-content-below-home" role="tab" aria-controls="custom-content-below-home" aria-selected="true">Управление</a>
                 </li>
+                {% if request.user.is_superuser or request.user.is_staff %} 
                 <li class="nav-item">
                   <a class="nav-link" id="custom-content-below-profile-tab" data-toggle="pill" href="#custom-content-below-profile" role="tab" aria-controls="custom-content-below-profile" aria-selected="false">Добавить</a>
                 </li>
+                {% endif %}
                 <li class="nav-item">
                   <a class="nav-link" id="custom-content-below-messages-tab" data-toggle="pill" href="#custom-content-below-messages" role="tab" aria-controls="custom-content-below-messages" aria-selected="false">Телеметрия</a>
                 </li>
@@ -256,7 +260,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
                       </div> 
                   </div> 
                 </div>            
-                    
+                {% if request.user.is_superuser or request.user.is_staff %} 
                 <div class="tab-pane fade" id="custom-content-below-profile" role="tabpanel" aria-labelledby="custom-content-below-profile-tab">
                     <div class="card card-primary mt-2">
                         <div class="card-header">
@@ -313,6 +317,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
                             </form>
                       </div>
                 </div>
+                {% endif %}
                 <div class="tab-pane fade" id="custom-content-below-messages" role="tabpanel" aria-labelledby="custom-content-below-messages-tab">
                     <div class="card card-primary mt-2">
                         <div class="card-header">

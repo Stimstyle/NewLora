@@ -31,3 +31,11 @@ class DeviceGroup(models.Model):
 
     def __str__(self):
         return self.group_name
+    
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    devices = models.ManyToManyField(DeviceData, blank=True, related_name='users_individual')
+    device_groups = models.ManyToManyField(DeviceGroup, blank=True, related_name='users_groups')
+
+    def __str__(self):
+        return f"Профиль пользователя: {self.user.username}"

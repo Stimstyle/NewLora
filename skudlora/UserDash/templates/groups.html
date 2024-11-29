@@ -119,13 +119,14 @@ scratch. This page gets rid of all links and provides the needed markup only.
             </a>
           </li>
           <li class="nav-item">
-            <a href="{% url 'notification' %}" class="nav-link">
+            <a href="{% url 'notification' %}" class="nav-link ">
               <i class="fas fa-bell"></i>
               <p>
                 Оповещения
               </p>
             </a>
           </li>
+          {% if request.user.is_superuser or request.user.is_staff %} 
           <li class="nav-item">
             <a href="{% url 'groups' %}" class="nav-link active">
               <i class="nav-icon fas fa-city"></i>
@@ -134,6 +135,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
               </p>
             </a>
           </li>
+          {% endif %}
         </ul>
       </nav>
       <!-- /.sidebar-menu -->
@@ -171,23 +173,26 @@ scratch. This page gets rid of all links and provides the needed markup only.
                         <div class="card-body">
                             <div class="form-group">
                                 <label for="InputName">Имя группы</label>
-                                <input type="text" class="form-control" id="InputName" name="device_name" 
-                                    placeholder="Введите имя группы">
+                                <input type="text" class="form-control" id="InputName" name="group_name" 
+                                       placeholder="Введите имя группы">
                             </div>
                             <div class="form-group">
-                                <label for="InputDevEUI">Адрес установки</label>
-                                <input type="text" class="form-control" id="InputDevEUI" name="dev_eui" 
-                                    placeholder="Введите адрес установки">
+                                <label for="InputAddress">Адрес установки</label>
+                                <input type="text" class="form-control" id="InputAddress" name="address" 
+                                       placeholder="Введите адрес установки">
                             </div>
                             <div class="form-group">
-                                <label for="InputDevEUI">Широта</label>
-                                <input type="text" class="form-control" id="InputDevEUI" name="dev_eui" 
-                                    placeholder="Введите широту">
+                                <label for="InputLatitude">Широта</label>
+                                <input type="number" class="form-control" id="InputLatitude" name="latitude" 
+                                       placeholder="Введите широту, вид 60.050889" step="any" min="-90" max="90" required>
+                                <small id="latitudeHelp" class="form-text text-muted">Широта должна быть в диапазоне от -90 до 90.</small>
                             </div>
+                            
                             <div class="form-group">
-                                <label for="InputDevEUI">Долгота</label>
-                                <input type="text" class="form-control" id="InputDevEUI" name="dev_eui" 
-                                    placeholder="Введите долготу">
+                                <label for="InputLongitude">Долгота</label>
+                                <input type="number" class="form-control" id="InputLongitude" name="longitude" 
+                                       placeholder="Введите долготу, вид 30.343979" step="any" min="-180" max="180" required>
+                                <small id="longitudeHelp" class="form-text text-muted">Долгота должна быть в диапазоне от -180 до 180.</small>
                             </div>
                             <div class="card card-default">
                                 <div class="card-header">
@@ -202,14 +207,17 @@ scratch. This page gets rid of all links and provides the needed markup only.
                                     </div>
                                 </div>
                                 <div class="card-body">
-                                        <div class="form-group">
-                                            <select class="duallistbox" id="deviceList" multiple="multiple">
-                                                {% for device in devices %}
-                                                    <option value="{{ device.dev_eui }}">{{ device.dev_eui }} - {{ device.address }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
+                                    <div class="form-group">
+                                        <select class="duallistbox" id="deviceList" name="devices" multiple="multiple">
+                                            {% for device in devices %}
+                                                <option value="{{ device.id }}">{{ device.dev_eui }} - {{ device.address }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
                                 </div>
+                            </div>
+                            <div class="card card-default">
+                                <button type="submit" class="btn btn-primary">Сохранить</button>
                             </div>
                         </div>
                     </form>
@@ -282,10 +290,19 @@ scratch. This page gets rid of all links and provides the needed markup only.
 <script src="{% static 'plugins/Amyscript/moonsun.js' %}"></script>
 <script src="{% static 'plugins/bootstrap4-duallistbox/jquery.bootstrap-duallistbox.js' %}"></script>
 <script>
-    $(function () {
-      $('.duallistbox').bootstrapDualListbox();
+    $(document).ready(function () {
+        // Активируем duallistbox
+        $('.duallistbox').bootstrapDualListbox({
+            nonSelectedListLabel: 'Доступные устройства',
+            selectedListLabel: 'Выбранные устройства',
+            moveOnSelect: false,
+            filterTextClear: "Показать все",
+            infoText: "Показано {0}",
+            infoTextEmpty: "Список пуст",
+            infoTextFiltered: "<span class='badge badge-warning'>Отфильтровано</span> {0} из {1}"
+        });
     });
-  </script>
+</script>
 
 </body>
 </html>

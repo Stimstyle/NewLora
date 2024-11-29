@@ -1,5 +1,6 @@
 from django.contrib import admin
 from post_receiver.models import DeviceData, APIKey
+from access_control.models import DevicePermission
 
 
 class DeviceDataAdmin(admin.ModelAdmin):
@@ -21,3 +22,4 @@ class APIKeyAdmin(admin.ModelAdmin):
     list_display = ('provider_name', 'key_name')  # Показывать только необходимые поля
     search_fields = ('provider_name', 'key_name')
 admin.site.register(APIKey, APIKeyAdmin)
+

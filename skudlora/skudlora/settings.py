@@ -165,7 +165,23 @@ JAZZMIN_SETTINGS = {
             "name": "Отправить HEX",
             "url": "/post_receiver/hex_sent/",
             "icon": "fa-solid fa-upload"
-        }]
+        },  
+        {
+            "name": "Редактор устройств и пользователей",
+            "url": "/edit_device_permissions/",
+            "icon": "fa-solid fa-building"
+        },
+        {
+            "name": "Редактор групп устройств и пользователей",
+            "url": "/device-group-permissions/",
+            "icon": "fa-solid fa-city"
+        }, 
+        {
+            "name": "Редактор групп устройств",
+            "url": "/edit-devices-in-group/",
+            "icon": "fas fa-object-group"
+        },           
+        ]
     }
 }
 

@@ -1,0 +1,88 @@
+{% extends "admin/base.html" %}
+{% load static %} 
+{% block content %}
+
+<form method="POST" class="mb-3" style="width: 100%;">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-6 d-flex">
+            <button type="submit" class="btn btn-primary">Применить</button>
+            <input type="text" name="search" class="form-control ml-2" style="height: 100%;" placeholder="Поиск по DevEUI, адресу" value="{{ request.GET.search }}">
+            <button type="submit" class="btn btn-primary ml-2">Поиск</button>
+        </div>
+        <div class="col-3" style="max-width: 100px; flex-shrink: 0; padding-left: 0;">
+            <select name="items_per_page" class="form-control" onchange="this.form.submit()">
+                <option value="25" {% if items_per_page == 25 %}selected{% endif %}>25</option>
+                <option value="50" {% if items_per_page == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if items_per_page == 100 %}selected{% endif %}>100</option>
+                <option value="200" {% if items_per_page == 200 %}selected{% endif %}>200</option>
+            </select>
+        </div>
+        <div class="col-3" style="max-width: 300px;">
+            <select name="user_id" class="form-control" required>
+                <option value="" disabled selected>Выберите пользователя</option>
+                {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }} {{ user.first_name }} {{ user.last_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+    
+    <table class="table table-bordered " style="margin-top: 20px; table-layout: fixed; border: 1px solid black;">
+        <thead>
+            <tr>
+                <th style="width: 2ch; text-align: center; vertical-align: middle; border: 1px solid black; background-color: #3498db; color: white;"></th>
+                <th style="width: 18ch; text-align: center; vertical-align: middle; border: 1px solid black; background-color: #3498db; color: white;">DevEUI</th>
+                <th style="width: auto; text-align: center; vertical-align: middle; border: 1px solid black; background-color: #3498db; color: white;">Адрес установки</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for notification in devices %}
+            <tr>
+                <td style="text-align: center; vertical-align: middle; padding: 5px; border: 1px solid black; width: 50px;">
+                    <div class="form-check m-0 p-0 d-flex justify-content-center align-items-center">
+                        <input 
+                            class="form-check-input m-0 p-0" 
+                            type="checkbox" 
+                            id="customCheck{{ notification.id }}" 
+                            name="selected_notifications" 
+                            value="{{ notification.id }}" 
+                        >
+                    </div>
+                </td> 
+                <td style="text-align: center; vertical-align: middle; padding: 5px 5px; border: 1px solid black;">{{ notification.dev_eui }}</td>
+                <td style="text-align: center; vertical-align: middle; padding: 5px 5px; border: 1px solid black;">{{ notification.address }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>  
+    </table>
+    <div class="pagination">
+        {% for i in devices.paginator.page_range %}
+            <a href="?page={{ i }}&search={{ request.GET.search }}&items_per_page={{ items_per_page }}" class="btn btn-link {% if devices.number == i %}active{% endif %}">
+                {{ i }}
+            </a>
+        {% endfor %}
+    </div>
+
+
+
+
+{% endblock %}
+
+<link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+<link rel="stylesheet" href="{% static 'dist/css/adminlte.css' %}">
+
+<script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+<script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'dist/js/adminlte.js' %}"></script>
+<script src="{% static 'plugins/Amyscript/moonsun.js' %}"></script>
+<script src="{% static 'plugins/bootstrap4-duallistbox/jquery.bootstrap-duallistbox.js' %}"></script>
+
+<script>
+    document.querySelector('#user_name').addEventListener('input', function(event) {
+    var selectedOption = event.target.value;
+    var userId = Array.from(document.querySelectorAll('#users option')).find(option => option.value === selectedOption)?.getAttribute('data-id');
+    document.getElementById('user_id').value = userId || '';  // Заполняем скрытое поле с ID
+    console.log('Selected user ID:', userId);  // Выводим ID пользователя для отладки
+    });
+</script>
