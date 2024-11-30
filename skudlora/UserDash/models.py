@@ -22,6 +22,28 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.get_notification_type_display()} - {self.message} ({self.timestamp})"
 
+from django.db import models
+from django.contrib.auth.models import User
+
+class EventNotification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('warning', 'Предупреждение'),
+        ('success', 'Успех'),
+        ('error', 'Ошибка'),
+        ('info', 'Информация'),
+        ('system', 'Системное'),
+    ]
+
+    dev_eui = models.CharField(max_length=255, null=True, blank=True, verbose_name="DevEUI")
+    address = models.CharField(max_length=255, verbose_name="Адрес")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='info', verbose_name="Тип уведомления")
+    timestamp = models.DateTimeField(auto_now_add=True, verbose_name="Время")
+
+    def __str__(self):
+        return f"{self.get_notification_type_display()} - {self.dev_eui} - {self.address} ({self.timestamp})"
+
+
 class DeviceGroup(models.Model):
     group_name = models.CharField(max_length=255, verbose_name="Название группы")
     address = models.TextField(verbose_name="Адрес группы", null=False)

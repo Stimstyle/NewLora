@@ -126,6 +126,14 @@ scratch. This page gets rid of all links and provides the needed markup only.
               </p>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="{% url 'event' %}" class="nav-link">
+              <i class="fas fa-stream"></i>
+              <p>
+                Диспетчер событий
+              </p>
+            </a>
+          </li>
           {% endif %}
         </ul>
       </nav>
@@ -159,8 +167,8 @@ scratch. This page gets rid of all links and provides the needed markup only.
       {% csrf_token %}
       <div class="content">
         <div class="container-fluid">
-          <div class="row">
             <div class="col-12">
+              
               <div class="card card-primary">
                 <div class="card-header">
                   <h3 class="card-title">Уведомления</h3>
@@ -300,7 +308,6 @@ scratch. This page gets rid of all links and provides the needed markup only.
               </div>
              {% endfor %}
             </div>
-          </div>
         </div><!-- /.container-fluid -->
       </div>
     </form> 

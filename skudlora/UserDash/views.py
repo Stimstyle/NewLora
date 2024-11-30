@@ -1,14 +1,19 @@
 from django.shortcuts import render, redirect
-from post_receiver.models import DeviceData, APIKey
-from UserDash.models import Notification, DeviceGroup
-from datetime import timedelta
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
 from django.core.paginator import Paginator
+from datetime import timedelta
 from django.db.models import Q  # Для фильтрации
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.decorators import user_passes_test
-
-
+from django.http import HttpResponse
+from post_receiver.models import DeviceData, APIKey
+from UserDash.models import Notification, DeviceGroup, EventNotification
+from access_control.models import DevicePermission, DeviceGroupPermission
+import pandas as pd
+from django.contrib.auth.models import User
+from django.contrib import messages
+from urllib.parse import urlencode
+import openpyxl
+from openpyxl.utils import get_column_letter
 
 @login_required
 def index(request):
@@ -315,6 +320,8 @@ def notification(request):
 
 def is_staff_or_superuser(user):
     return user.is_staff or user.is_superuser
+def is_admin_or_arendator(user):
+    return user.is_superuser or user.is_staff or user.groups.filter(name='Arendators').exists()
 
 
 
@@ -368,3 +375,150 @@ def groups(request):
     # При GET-запросе просто показываем страницу с устройствами
     devices = DeviceData.objects.all()
     return render(request, 'groups.html', {'devices': devices})
+
+@login_required
+@user_passes_test(is_admin_or_arendator)
+def event(request):
+    if request.method == 'POST' and 'delete_selected' in request.POST:
+        delete_ids = request.POST.getlist('delete_ids')
+        if delete_ids:
+            EventNotification.objects.filter(id__in=delete_ids).delete()
+            messages.success(request, "Выбранные уведомления успешно удалены.")
+        else:
+            messages.warning(request, "Не выбрано ни одного уведомления для удаления.")
+        return redirect('event')
+
+    # Фильтрация уведомлений
+    dev_eui = request.GET.get('dev_eui', '').strip()
+    address = request.GET.get('address', '').strip()
+    user_filter = request.GET.get('user', '').strip()
+    notification_type = request.GET.get('notification_type', '').strip()
+    start_date = request.GET.get('start_date', '').strip()
+    start_time = request.GET.get('start_time', '').strip()
+    end_date = request.GET.get('end_date', '').strip()
+    end_time = request.GET.get('end_time', '').strip()
+    items_per_page = request.GET.get('items_per_page', 25)
+    page = request.GET.get('page')
+
+    export_excel = request.GET.get('export_excel', 'false').lower() == 'true'
+
+    notifications = EventNotification.objects.all()
+
+    if dev_eui:
+        notifications = notifications.filter(dev_eui__icontains=dev_eui)
+    if address:
+        notifications = notifications.filter(address__icontains=address)
+    if is_admin_or_arendator(request.user) and user_filter:
+        notifications = notifications.filter(user__username__icontains=user_filter)
+    if notification_type:
+        notifications = notifications.filter(notification_type=notification_type)
+    if start_date:
+        try:
+            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d')
+            if start_time:
+                start_datetime_str = f"{start_date} {start_time}"
+                start_datetime_obj = datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M')
+                notifications = notifications.filter(timestamp__gte=start_datetime_obj)
+            else:
+                notifications = notifications.filter(timestamp__gte=start_date_obj)
+        except ValueError:
+            messages.error(request, "Некорректный формат начальной даты или времени.")
+    if end_date:
+        try:
+            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d')
+            if end_time:
+                end_datetime_str = f"{end_date} {end_time}"
+                end_datetime_obj = datetime.strptime(end_datetime_str, '%Y-%m-%d %H:%M')
+                notifications = notifications.filter(timestamp__lte=end_datetime_obj)
+            else:
+                notifications = notifications.filter(timestamp__lte=end_date_obj)
+        except ValueError:
+            messages.error(request, "Некорректный формат конечной даты или времени.")
+
+    notifications = notifications.order_by('-timestamp')
+
+    if export_excel:
+        # Генерация Excel-файла
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Уведомления"
+
+        # Заголовки столбцов
+        headers = ['DevEUI', 'Адрес']
+        if is_admin_or_arendator(request.user):
+            headers.append('Пользователь')
+        headers.extend(['Тип уведомления', 'Время'])
+
+        ws.append(headers)
+
+        # Добавление данных
+        for notification in notifications:
+            row = [
+                notification.dev_eui,
+                notification.address,
+            ]
+            if is_admin_or_arendator(request.user):
+                row.append(notification.user.username)
+            row.extend([
+                notification.get_notification_type_display(),
+                notification.timestamp.strftime('%Y-%m-%d %H:%M'),
+            ])
+            ws.append(row)
+
+        # Автоматическая настройка ширины столбцов
+        for column in ws.columns:
+            max_length = 0
+            column_letter = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column_letter].width = adjusted_width
+
+        # Подготовка HTTP-ответа
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=notifications.xlsx'
+        wb.save(response)
+        return response
+
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    paginator = Paginator(notifications, items_per_page)
+
+    try:
+        notifications_page = paginator.page(page)
+    except PageNotAnInteger:
+        notifications_page = paginator.page(1)
+    except EmptyPage:
+        notifications_page = paginator.page(paginator.num_pages)
+
+    get_params = request.GET.copy()
+    if 'page' in get_params:
+        del get_params['page']
+    get_params = get_params.urlencode()
+
+    current_page = notifications_page.number
+    total_pages = paginator.num_pages
+    start_index = max(current_page - 2, 1)
+    end_index = min(current_page + 2, total_pages)
+    page_range = range(start_index, end_index + 1)
+
+    context = {
+        'notifications': notifications_page,
+        'dev_eui': dev_eui,
+        'address': address,
+        'user_filter': user_filter,
+        'notification_type': notification_type,
+        'start_date': start_date,
+        'start_time': start_time,
+        'end_date': end_date,
+        'end_time': end_time,
+        'items_per_page': int(items_per_page),
+        'is_admin': is_admin_or_arendator(request.user),
+        'get_params': get_params,
+        'page_range': page_range,
+    }
+
+    return render(request, 'event.html', context)
