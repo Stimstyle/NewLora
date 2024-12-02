@@ -150,17 +150,22 @@ def index(request):
 def devices(request):
     query = request.GET.get('search', '')
 
-    # Получаем устройства, к которым у пользователя есть прямые разрешения
-    user_devices = DeviceData.objects.filter(devicepermission__user=request.user)
+    if request.user.is_superuser:
+        # Суперпользователь видит все устройства
+        devices = DeviceData.objects.all()
+    else:
+        # Обычный пользователь видит только устройства, к которым у него есть доступ
+        # Получаем устройства, к которым у пользователя есть прямые разрешения
+        user_devices = DeviceData.objects.filter(devicepermission__user=request.user)
 
-    # Получаем группы устройств, к которым у пользователя есть разрешения
-    device_groups_with_permission = DeviceGroup.objects.filter(devicegrouppermission__user=request.user)
+        # Получаем группы устройств, к которым у пользователя есть разрешения
+        device_groups_with_permission = DeviceGroup.objects.filter(devicegrouppermission__user=request.user)
 
-    # Получаем устройства из этих групп
-    devices_in_groups = DeviceData.objects.filter(device_groups__in=device_groups_with_permission)
+        # Получаем устройства из этих групп
+        devices_in_groups = DeviceData.objects.filter(device_groups__in=device_groups_with_permission)
 
-    # Объединяем устройства из прямых разрешений и из групповых разрешений
-    devices = (user_devices | devices_in_groups).distinct()
+        # Объединяем устройства из прямых разрешений и из групповых разрешений
+        devices = (user_devices | devices_in_groups).distinct()
 
     # Применяем фильтр поиска, если он задан
     if query:
