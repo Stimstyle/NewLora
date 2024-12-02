@@ -3,17 +3,17 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
 from django.core.paginator import Paginator
 from datetime import timedelta
-from django.db.models import Q  # Для фильтрации
+from django.db.models import Q, Case, When, Value, CharField, Avg, Min, Max
 from django.http import HttpResponse
 from post_receiver.models import DeviceData, APIKey
 from UserDash.models import Notification, DeviceGroup, EventNotification
 from access_control.models import DevicePermission, DeviceGroupPermission
-import pandas as pd
-from django.contrib.auth.models import User
 from django.contrib import messages
 from urllib.parse import urlencode
 import openpyxl
 from openpyxl.utils import get_column_letter
+import folium
+
 
 @login_required
 def index(request):
@@ -81,16 +81,67 @@ def index(request):
             except DeviceData.DoesNotExist:
                 pass
 
-    paginator = Paginator(devices, 10)  # 10 устройств на странице
+    paginator = Paginator(devices, 8)  # 10 устройств на странице
     page_number = request.GET.get('page', 1)  # Получаем номер страницы из параметра запроса
     page_devices = paginator.get_page(page_number)  # Извлекаем устройства для текущей страницы
+
+
+    # Фильтруем устройства с валидными координатами
+    devices_with_coords = devices.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
+
+    if devices_with_coords.exists():
+        avg_lat = devices_with_coords.aggregate(Avg('latitude'))['latitude__avg']
+        avg_lon = devices_with_coords.aggregate(Avg('longitude'))['longitude__avg']
+
+        min_lat = devices_with_coords.aggregate(min_lat=Min('latitude'))['min_lat']
+        max_lat = devices_with_coords.aggregate(max_lat=Max('latitude'))['max_lat']
+        min_lon = devices_with_coords.aggregate(min_lon=Min('longitude'))['min_lon']
+        max_lon = devices_with_coords.aggregate(max_lon=Max('longitude'))['max_lon']
+    else:
+        # Устанавливаем стандартные координаты, если устройств нет
+        avg_lat, avg_lon = 0, 0
+        min_lat, max_lat, min_lon, max_lon = -10, 10, -10, 10  # Примерные границы
+
+    # Создание карты с помощью Folium
+    folium_map = folium.Map(
+        location=[avg_lat, avg_lon],
+        zoom_start=12,
+        attributionControl=False  # Отключаем стандартную атрибуцию
+    )
+
+    # Добавляем собственный TileLayer с кастомной атрибуцией
+    folium.TileLayer(
+        tiles='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attr='© OpenStreetMap contributors | Ваш текст здесь',
+        name='OpenStreetMap',
+        control=False
+    ).add_to(folium_map)
+
+    # Добавление маркеров на карту
+    for device in devices:
+        if device.latitude and device.longitude:
+            folium.Marker(
+                location=[device.latitude, device.longitude],
+                popup=f"{device.address} - {device.status}",
+                icon=folium.Icon(color='green' if device.status == 'Онлайн' else 'red')
+            ).add_to(folium_map)
+
+    # Если есть устройства с координатами, устанавливаем границы карты
+    if devices_with_coords.exists():
+        folium_map.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
+
+    # Преобразование карты в HTML
+    map_html = folium_map._repr_html_()
+
+
 
     return render(request, 'index.html', {
         'devices': page_devices,
         'search_query': query,
         'total_devices': total_devices,  # Общее количество устройств
         'online_count': online_count,  # Количество онлайн-устройств
-        'offline_count': offline_count  # Количество оффлайн-устройств
+        'offline_count': offline_count,  # Количество оффлайн-устройств
+        'map_html': map_html
     })
 
 
