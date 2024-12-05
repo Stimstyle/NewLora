@@ -4,6 +4,10 @@ from django import forms
 from access_control.models import Device, DevicePermission
 from django.contrib.auth.models import User
 from post_receiver.models import DeviceData
+from UserDash.models import DeviceGroup  # Импортируем DeviceGroup
+from django.contrib.admin.widgets import FilteredSelectMultiple
+from .models import DistrictGroup
+
 
 # Форма для создания устройства
 class DeviceForm(forms.ModelForm):
@@ -30,3 +34,18 @@ class DevicePermissionForm(forms.Form):
         required=False,
         label='Пользователь может управлять устройствами'
     )
+
+class DistrictGroupForm(forms.ModelForm):
+    groups = forms.ModelMultipleChoiceField(
+        queryset=DeviceGroup.objects.all(),
+        required=False,
+        widget=FilteredSelectMultiple("Группы домов", is_stacked=False)
+    )
+
+    class Meta:
+        model = DistrictGroup
+        fields = ['district_name', 'groups']
+
+    def __init__(self, *args, **kwargs):
+        super(DistrictGroupForm, self).__init__(*args, **kwargs)
+        self.fields['groups'].help_text = "Выберите группы домов, которые должны входить в этот район."

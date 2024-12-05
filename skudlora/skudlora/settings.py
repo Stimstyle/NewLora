@@ -140,10 +140,12 @@ STATIC_ROOT = os.path.join(os.path.dirname(BASE_DIR), "static_cdn")
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+LOGOUT_REDIRECT_URL = '/'
+
 
 JAZZMIN_SETTINGS = {
 "site_brand": "SELIO",   
-"show_ui_builder": True,
+"show_ui_builder": False,
 "show_sidebar": True,
 "site_logo": "/books/img/OnPhone.png",
 "user_avatar": None,
@@ -156,34 +158,75 @@ JAZZMIN_SETTINGS = {
         "post_receiver.devicedata": "fa-solid fa-plus",
         "post_receiver.apikey": "fa-solid fa-key",
     },
+    "hide_models": [
+        "UserDash.DeviceGroup",
+        "Access_Control.districtgroup", 
+        "auth.Group",
+    ],
+
+        "topmenu_links": [
+
+        # Url that gets reversed (Permissions can be added)
+        {"name": "Домой",  "url": "admin:index", "permissions": ["auth.view_user"]},
+
+        # external url that opens in a new window (Permissions can be added)
+        {"name": "DashBoard", "url": "/UserDash/index/", "new_window": True},
+
+        # model admin to link to (Permissions checked against model)
+        {"model": "auth.User"},
+
+        # App with dropdown menu to all its models pages (Permissions checked against models)
+        {"app": "books"},
+    ],
     
     "custom_links": {
         ##"auth": [{
         #    "name": "Отправить ХУЙ",
         #№}],
-        "post_receiver": [{
+        
+        "post_receiver": [
+        {
+            "name": "Редактор групп устройств",
+            "url": "/admin/UserDash/devicegroup/",
+            "icon": "fas fa-layer-group"
+        },
+        {
+            "name": "Редактор районов",
+            "url": "/admin/access_control/districtgroup/",
+            "icon": "fas fa-sitemap"
+        },             
+        {
             "name": "Отправить HEX",
             "url": "/post_receiver/hex_sent/",
             "icon": "fa-solid fa-upload"
         },  
         {
-            "name": "Редактор устройств и пользователей",
+            "name": "Объеденинение устройств и пользователей",
             "url": "/edit_device_permissions/",
+            "icon": "fa-solid fa-tower-cell"
+        },
+        {
+            "name": "Объеденинение домов и пользователей",
+            "url": "/device-group-permissions/",
             "icon": "fa-solid fa-building"
         },
         {
-            "name": "Редактор групп устройств и пользователей",
-            "url": "/device-group-permissions/",
+            "name": "Объеденинение районов и пользователей",
+            "url": "/edit_user_district_permissions/",
             "icon": "fa-solid fa-city"
-        }, 
+        },          
+        ],
+        "auth": [
         {
-            "name": "Редактор групп устройств",
-            "url": "/edit-devices-in-group/",
-            "icon": "fas fa-object-group"
-        },           
-        ]
-    }
+            "name": "Объеденинение пользователей",
+            "url": "/manage_user_groups/",
+            "icon": "fa-solid fa-people-group"
+        },             
+        ],
+    },
+    
 }
+
 
 
 JAZZMIN_UI_TWEAKS = {

@@ -45,3 +45,28 @@ class Command(models.Model):
 
     def __str__(self):
         return f"Command for {self.device.device_name} - Sent: {self.is_sent}"
+
+
+class DistrictGroup(models.Model):
+    district_name = models.CharField(max_length=255, verbose_name="Название района (ТСЖ, УК, ТСН, ЖСК)")
+    groups = models.ManyToManyField(DeviceGroup, related_name="districts", verbose_name="Группы домов")
+
+    def __str__(self):
+        return self.district_name
+    
+
+class DistrictGroupPermission(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="district_permissions", verbose_name="Пользователь")
+    district_group = models.ForeignKey(DistrictGroup, on_delete=models.CASCADE, related_name="user_permissions", verbose_name="Район")
+    can_manage = models.BooleanField(default=False, verbose_name="Может управлять")
+
+    def __str__(self):
+        return f"{self.user.username} - {self.district_group.district_name}"
+
+class UserGroup(models.Model):
+    name = models.CharField(max_length=255, unique=True, verbose_name="Название группы")
+    users = models.ManyToManyField(User, related_name="custom_user_groups", verbose_name="Пользователи")
+    is_active = models.BooleanField(default=True, verbose_name="Активна")
+
+    def __str__(self):
+        return self.name    

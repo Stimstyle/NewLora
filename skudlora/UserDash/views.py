@@ -13,92 +13,100 @@ from urllib.parse import urlencode
 import openpyxl
 from openpyxl.utils import get_column_letter
 import folium
-
+from folium.plugins import MarkerCluster
 
 @login_required
 def index(request):
-    query = request.GET.get('search', '')  # Получаем значение из строки поиска
+    query = request.GET.get('search', '')
 
     if request.user.is_superuser:
-        # Суперпользователь видит все устройства
         devices = DeviceData.objects.all()
     else:
-        # Обычный пользователь видит только устройства, к которым у него есть доступ
-        # Получаем устройства, к которым у пользователя есть прямые разрешения
         user_devices = DeviceData.objects.filter(devicepermission__user=request.user)
-
-        # Получаем группы устройств, к которым у пользователя есть разрешения
         device_groups_with_permission = DeviceGroup.objects.filter(devicegrouppermission__user=request.user)
-
-        # Получаем устройства из этих групп
         devices_in_groups = DeviceData.objects.filter(device_groups__in=device_groups_with_permission)
-
-        # Объединяем устройства из прямых разрешений и из групповых разрешений
         devices = (user_devices | devices_in_groups).distinct()
 
-    # Применяем фильтр по адресу
     devices = devices.filter(address__icontains=query)
 
-    online_count = 0
-    offline_count = 0
-    current_time = timezone.now()  # Текущее время
+    current_time = timezone.now()
 
-    for device in devices:
-        # Проверяем, если время устройства прошло больше чем 1 час
-        if device.time < current_time - timedelta(hours=1):
-            device.status = "Оффлайн"
-        else:
-            device.status = "Онлайн"
-            online_count += 1
+    devices = devices.annotate(
+        status=Case(
+            When(time__lt=current_time - timedelta(hours=1), then=Value('Оффлайн')),
+            default=Value('Онлайн'),
+            output_field=CharField(),
+        )
+    )
 
+    online_count = devices.filter(status='Онлайн').count()
     total_devices = devices.count()
-    offline_count = total_devices - online_count  # Количество оффлайн-устройств
+    offline_count = total_devices - online_count
 
     if request.method == "POST":
-        dev_eui = request.POST.get('dev_eui')  # Получаем DevEUI из формы
+        dev_eui = request.POST.get('dev_eui')
         if dev_eui:
             try:
-                # Получаем устройство по DevEUI
                 device = DeviceData.objects.get(dev_eui=dev_eui)
-                
-                # Проверяем, есть ли у пользователя доступ к этому устройству
                 if request.user.is_superuser or \
                    DevicePermission.objects.filter(user=request.user, device=device).exists() or \
                    DeviceGroupPermission.objects.filter(user=request.user, device_group__devices=device).exists():
-                    
-                    # Создаем уведомление
                     Notification.objects.create(
                         message=f"Открытие двери по адресу {device.address} пользователем {request.user.username}",
                         user=request.user,
                         address=device.address,
-                        dev_eui=dev_eui,  # Добавляем DevEUI в уведомление
-                        is_read=False,  # Статус уведомления - непрочитано
-                        notification_type='system'  # Тип уведомления
+                        dev_eui=dev_eui,
+                        is_read=False,
+                        notification_type='system'
                     )
-                else:
-                    # Пользователь не имеет доступа к этому устройству
-                    pass  # Можно вернуть сообщение об ошибке или игнорировать
             except DeviceData.DoesNotExist:
                 pass
 
-    paginator = Paginator(devices, 8)  # 10 устройств на странице
-    page_number = request.GET.get('page', 1)  # Получаем номер страницы из параметра запроса
-    page_devices = paginator.get_page(page_number)  # Извлекаем устройства для текущей страницы
-
+    paginator = Paginator(devices, 10)
+    page_number = request.GET.get('page', 1)
+    page_devices = paginator.get_page(page_number)
 
     # Фильтруем устройства с валидными координатами
     devices_with_coords = devices.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
 
-    if devices_with_coords.exists():
-        avg_lat = devices_with_coords.aggregate(Avg('latitude'))['latitude__avg']
-        avg_lon = devices_with_coords.aggregate(Avg('longitude'))['longitude__avg']
+    # Получаем группы, которые содержат устройства с координатами
+    device_groups = DeviceGroup.objects.filter(devices__in=devices_with_coords).distinct()
 
-        min_lat = devices_with_coords.aggregate(min_lat=Min('latitude'))['min_lat']
-        max_lat = devices_with_coords.aggregate(max_lat=Max('latitude'))['max_lat']
-        min_lon = devices_with_coords.aggregate(min_lon=Min('longitude'))['min_lon']
-        max_lon = devices_with_coords.aggregate(max_lon=Max('longitude'))['max_lon']
+    # Собираем данные о группах
+    groups_data = []
+    for group in device_groups:
+        if group.latitude is not None and group.longitude is not None:
+            groups_data.append({
+                'name': group.group_name,  # Используем правильное поле group_name
+                'latitude': group.latitude,
+                'longitude': group.longitude
+            })
+
+    # Получаем устройства, не входящие в никакую группу
+    devices_not_in_groups = devices_with_coords.filter(device_groups__isnull=True)
+
+    # Сбор всех координат для вычисления границ
+    all_lats = []
+    all_lons = []
+
+    for group in groups_data:
+        all_lats.append(group['latitude'])
+        all_lons.append(group['longitude'])
+
+    for device in devices_not_in_groups:
+        all_lats.append(device.latitude)
+        all_lons.append(device.longitude)
+
+    if all_lats and all_lons:
+        avg_lat = sum(all_lats) / len(all_lats)
+        avg_lon = sum(all_lons) / len(all_lons)
+
+        min_lat = min(all_lats)
+        max_lat = max(all_lats)
+        min_lon = min(all_lons)
+        max_lon = max(all_lons)
     else:
-        # Устанавливаем стандартные координаты, если устройств нет
+        # Стандартные координаты, если нет устройств
         avg_lat, avg_lon = 0, 0
         min_lat, max_lat, min_lon, max_lon = -10, 10, -10, 10  # Примерные границы
 
@@ -106,7 +114,7 @@ def index(request):
     folium_map = folium.Map(
         location=[avg_lat, avg_lon],
         zoom_start=12,
-        attributionControl=False  # Отключаем стандартную атрибуцию
+        attributionControl=False  # Отключение стандартной атрибуции
     )
 
     # Добавляем собственный TileLayer с кастомной атрибуцией
@@ -117,30 +125,38 @@ def index(request):
         control=False
     ).add_to(folium_map)
 
-    # Добавление маркеров на карту
-    for device in devices:
-        if device.latitude and device.longitude:
-            folium.Marker(
-                location=[device.latitude, device.longitude],
-                popup=f"{device.address} - {device.status}",
-                icon=folium.Icon(color='green' if device.status == 'Онлайн' else 'red')
-            ).add_to(folium_map)
+    # Создаём кластер маркеров для отдельных устройств
+    marker_cluster = MarkerCluster(name='Устройства').add_to(folium_map)
 
-    # Если есть устройства с координатами, устанавливаем границы карты
-    if devices_with_coords.exists():
+    # Добавление маркеров для групп
+    for group in groups_data:
+        folium.Marker(
+            location=[group['latitude'], group['longitude']],
+            popup=f"Группа: {group['name']}",
+            icon=folium.Icon(color='blue', icon='info-sign')  # Синий маркер для групп
+        ).add_to(folium_map)
+
+    # Добавление маркеров для устройств, не входящих в группы
+    for device in devices_not_in_groups:
+        folium.Marker(
+            location=[device.latitude, device.longitude],
+            popup=f"{device.address} - {device.status}",
+            icon=folium.Icon(color='green' if device.status == 'Онлайн' else 'red')
+        ).add_to(marker_cluster)
+
+    # Установка границ карты
+    if all_lats and all_lons:
         folium_map.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
 
     # Преобразование карты в HTML
     map_html = folium_map._repr_html_()
 
-
-
     return render(request, 'index.html', {
         'devices': page_devices,
         'search_query': query,
-        'total_devices': total_devices,  # Общее количество устройств
-        'online_count': online_count,  # Количество онлайн-устройств
-        'offline_count': offline_count,  # Количество оффлайн-устройств
+        'total_devices': total_devices,
+        'online_count': online_count,
+        'offline_count': offline_count,
         'map_html': map_html
     })
 

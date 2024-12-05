@@ -1,7 +1,9 @@
 # UserDash/admin.py
 
 from django.contrib import admin
-from .models import UserProfile, DeviceGroup, Notification
+from .models import DeviceGroup, DeviceData
+from django import forms
+from django.contrib.admin.widgets import FilteredSelectMultiple
 
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user',)

@@ -1,0 +1,36 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <!-- Подключение необходимых стилей и скриптов -->
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/widgets.css' %}">
+    <script type="text/javascript" src="{% static 'admin/js/core.js' %}"></script>
+    <script type="text/javascript" src="{% static 'admin/js/SelectFilter2.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}  <!-- Отображение стандартной формы админки -->
+
+    {% if original %}
+        <div class="mt-4">
+            <h3>Информация</h3>
+            <ul>
+                <li><strong>Название района (ТСЖ, УК, ТСН, ЖСК):</strong> {{ original.district_name }}</li>
+                <li><strong>Кол-во групп:</strong> {{ original.groups.count }}</li>
+                <li><strong>Группы:</strong>
+                    <ul>
+                        {% for group in original.groups.all %}
+                            <li>{{ group.group_name }}</li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block inline_media %}
+    {{ block.super }}
+    {{ media }}
+{% endblock %}

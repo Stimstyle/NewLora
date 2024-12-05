@@ -1,0 +1,211 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block content %}
+<!-- Форма для поиска и выбора пользователя -->
+<form method="GET" class="mb-3" style="width: 100%;">
+    <div class="row">
+        <!-- Поле поиска по пользователям -->
+        <div class="col-md-6 col-sm-12 d-flex mb-2">
+            <input type="text" name="user_search" class="form-control" style="height: 100%;" placeholder="Поиск по пользователям" value="{{ user_search_query }}">
+            <button type="submit" class="btn btn-primary ml-3">Поиск</button>
+        </div>
+        <!-- Поле выбора пользователя -->
+        <div class="col-md-6 col-sm-12">
+            <select name="user_id" class="form-control" required onchange="this.form.submit()">
+                <option value="" disabled {% if not selected_user %}selected{% endif %}>Выберите пользователя</option>
+                {% for user in users %}
+                    <option value="{{ user.id }}" {% if selected_user and user.id == selected_user.id %}selected{% endif %}>
+                        {{ user.username }} {{ user.first_name }} {{ user.last_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</form>
+
+{% if selected_user %}
+<!-- Форма для поиска районов и изменения количества элементов на странице -->
+<form method="GET" class="mb-3" style="width: 100%;">
+    <input type="hidden" name="user_id" value="{{ selected_user.id }}">
+    <input type="hidden" name="user_search" value="{{ user_search_query }}">
+    <div class="row">
+        <div class="col-md-6 col-sm-12 d-flex mb-2 ">
+            <input type="text" name="search" style="height: 100%;" class="form-control" placeholder="Поиск по названию района" value="{{ search_query }}">
+            <button type="submit" class="btn btn-primary ml-3">Поиск</button>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-2">
+            <select name="items_per_page" class="form-control" onchange="this.form.submit()">
+                <option value="25" {% if items_per_page == 25 %}selected{% endif %}>25</option>
+                <option value="50" {% if items_per_page == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if items_per_page == 100 %}selected{% endif %}>100</option>
+                <option value="200" {% if items_per_page == 200 %}selected{% endif %}>200</option>
+            </select>
+        </div>
+    </div>
+</form>
+
+<!-- Форма для сохранения изменений в разрешениях районов -->
+<form method="POST" class="mb-3" style="width: 100%;">
+    {% csrf_token %}
+    <input type="hidden" name="user_id" value="{{ selected_user.id }}">
+    <input type="hidden" name="save_permissions" value="1">
+    <!-- Кнопки управления выбором районов -->
+    <div class="row mb-2">
+        <div class="col-12 text-left">
+            <button type="button" class="btn btn-secondary mb-2" onclick="selectAll()">Выбрать все</button>
+            <button type="button" class="btn btn-secondary mb-2" onclick="deselectAll()">Снять выделение</button>
+            <button type="submit" class="btn btn-primary mb-2">Применить</button>
+        </div>
+    </div>
+
+    <!-- Таблица районов -->
+    <div class="table-responsive">
+        <table class="table table-bordered" style="table-layout: fixed; border: 1px solid black;">
+            <thead>
+                <tr>
+                    <th style="width: 50px; text-align: center; vertical-align: middle; background-color: #3498db; color: white;">
+                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
+                    </th>
+                    <th style="text-align: center; vertical-align: middle; background-color: #3498db; color: white;">Название района</th>
+                    <th style="width: 100px; text-align: center; vertical-align: middle; background-color: #3498db; color: white;">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for district in district_groups %}
+                <tr>
+                    <td style="text-align: center; vertical-align: middle; padding: 5px;">
+                        <input 
+                            class="group-checkbox" 
+                            type="checkbox" 
+                            id="customCheck{{ district.id }}" 
+                            name="selected_districts" 
+                            value="{{ district.id }}" 
+                            {% if district.id in user_district_permissions %}checked{% endif %}
+                        >
+                    </td>
+                    <td style="text-align: center; vertical-align: middle; padding: 5px;">
+                        {{ district.district_name }}
+                    </td>
+                    <td style="text-align: center; vertical-align: middle; padding: 5px;">
+                        <button type="button" class="btn btn-info btn-sm" onclick="toggleGroups({{ district.id }})">
+                            Показать
+                        </button>
+                    </td>
+                </tr>
+                <tr id="groups-row-{{ district.id }}" style="display: none;">
+                    <td colspan="3" style="padding: 0;">
+                        <div class="table-responsive">
+                            <table class="table table-dark table-bordered table-hover table-striped table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 18ch; text-align: center;">
+                                            <i class="fas fa-home"></i> Название группы
+                                        </th>
+                                        <th style="text-align: center;">
+                                            <i class="fas fa-map-marker-alt"></i> Адрес
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if district.groups.exists %}
+                                        {% for group in district.groups.all %}
+                                        <tr>
+                                            <td style="text-align: center;">{{ group.group_name }}</td>
+                                            <td>{{ group.address }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="2" style="text-align: center;">Нет групп домов в этом районе.</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            
+
+            
+        </table>
+    </div>
+
+    <!-- Пагинация -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-start">
+            {% if district_groups.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ district_groups.previous_page_number }}&search={{ search_query }}&items_per_page={{ items_per_page }}&user_id={{ selected_user.id }}&user_search={{ user_search_query }}" aria-label="Previous">
+                        &laquo;
+                    </a>
+                </li>
+            {% endif %}
+            {% for num in district_groups.paginator.page_range %}
+                {% if district_groups.number == num %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                {% elif num > district_groups.number|add:'-3' and num < district_groups.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}&search={{ search_query }}&items_per_page={{ items_per_page }}&user_id={{ selected_user.id }}&user_search={{ user_search_query }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if district_groups.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ district_groups.next_page_number }}&search={{ search_query }}&items_per_page={{ items_per_page }}&user_id={{ selected_user.id }}&user_search={{ user_search_query }}" aria-label="Next">
+                        &raquo;
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</form>
+{% endif %}
+
+<!-- Скрипты для управления выбором чекбоксов -->
+<script>
+    function selectAll() {
+        var checkboxes = document.querySelectorAll('.group-checkbox');
+        checkboxes.forEach(function(checkbox) {
+            checkbox.checked = true;
+        });
+    }
+
+    function deselectAll() {
+        var checkboxes = document.querySelectorAll('.group-checkbox');
+        checkboxes.forEach(function(checkbox) {
+            checkbox.checked = false;
+        });
+    }
+
+    function toggleSelectAll(source) {
+        if (source.checked) {
+            selectAll();
+        } else {
+            deselectAll();
+        }
+    }
+</script>
+<script>
+    function toggleGroups(districtId) {
+        var row = document.getElementById('groups-row-' + districtId);
+        if (row.style.display === 'none') {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+</script>
+
+
+{% endblock %}
+
+
+
+<!-- Подключение стилей и скриптов -->
+<link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+<link rel="stylesheet" href="{% static 'dist/css/adminlte.css' %}">
+
+<script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+<script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'dist/js/adminlte.js' %}"></script>

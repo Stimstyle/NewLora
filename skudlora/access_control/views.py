@@ -1,6 +1,6 @@
 # access_control/views.py
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from .forms import DeviceForm, DevicePermissionForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
@@ -11,7 +11,7 @@ from django.contrib.admin.sites import site
 from django.core.paginator import Paginator
 from django.db.models import Q
 from UserDash.models import DeviceGroup
-from .models import DeviceGroupPermission
+from .models import DistrictGroupPermission, DistrictGroup, DeviceGroupPermission, UserGroup
 
 
 def home(request):
@@ -25,7 +25,7 @@ def home(request):
             if user.is_staff:  # Проверяем, является ли пользователь администратором
                 return redirect('/admin/')
             else:
-                return redirect('user_dashboard')  # Перенаправляем на пользовательскую страницу
+                return redirect('UserDash/index/')  # Перенаправляем на пользовательскую страницу
         else:
             messages.error(request, 'Неверный логин или пароль.')  # Выводим сообщение об ошибке
 
@@ -352,3 +352,181 @@ def edit_devices_in_group(request):
     }
 
     return render(request, 'admin/edit_devices_in_group.html', context)
+
+@login_required
+def edit_user_district_permissions(request):
+    search_query = request.GET.get('search', '').strip()
+    items_per_page = int(request.GET.get('items_per_page', 25))
+    page_number = request.GET.get('page')
+    user_search_query = request.GET.get('user_search', '').strip()
+
+    # Поиск пользователей
+    if user_search_query:
+        users = User.objects.filter(
+            Q(username__icontains=user_search_query) |
+            Q(first_name__icontains=user_search_query) |
+            Q(last_name__icontains=user_search_query)
+        )
+    else:
+        users = User.objects.all()
+
+    # Получаем выбранного пользователя
+    user_id = request.GET.get('user_id') or request.POST.get('user_id')
+    selected_user = None
+    user_district_permissions = []
+
+    if user_id:
+        try:
+            selected_user = User.objects.get(id=user_id)
+            user_district_permissions = DistrictGroupPermission.objects.filter(user=selected_user).values_list('district_group_id', flat=True)
+        except User.DoesNotExist:
+            messages.error(request, 'Пользователь не найден.')
+
+    # Поиск районов
+    district_groups = DistrictGroup.objects.all()
+    if search_query:
+        district_groups = district_groups.filter(district_name__icontains=search_query)
+
+    # Пагинация районов
+    paginator = Paginator(district_groups, items_per_page)
+    district_groups = paginator.get_page(page_number)
+
+    # Сохранение прав
+    if request.method == 'POST' and 'save_permissions' in request.POST:
+        selected_districts = request.POST.getlist('selected_districts')
+
+        if selected_user:
+            DistrictGroupPermission.objects.filter(user=selected_user).delete()
+
+            for district_id in selected_districts:
+                try:
+                    district = DistrictGroup.objects.get(id=district_id)
+                    DistrictGroupPermission.objects.create(user=selected_user, district_group=district, can_manage=True)
+                except DistrictGroup.DoesNotExist:
+                    messages.error(request, f'Район с ID {district_id} не найден.')
+            messages.success(request, 'Разрешения успешно обновлены.')
+            return redirect(f'{request.path}?user_id={selected_user.id}&search={search_query}&items_per_page={items_per_page}&page={district_groups.number}&user_search={user_search_query}')
+        else:
+            messages.error(request, 'Пожалуйста, выберите пользователя.')
+    # Добавляем available_apps в контекст
+    available_apps = site.each_context(request).get("available_apps", [])
+    context = {
+        'users': users,
+        'district_groups': district_groups,
+        'selected_user': selected_user,
+        'user_district_permissions': user_district_permissions,
+        'items_per_page': items_per_page,
+        'search_query': search_query,
+        'user_search_query': user_search_query,
+        'available_apps': available_apps,
+    }
+
+    return render(request, 'admin/edit_user_district_permissions.html', context)
+
+@login_required
+def manage_user_groups(request):
+    search_query = request.GET.get('search', '').strip()
+    items_per_page = int(request.GET.get('items_per_page', 25))
+    page_number = request.GET.get('page')
+    group_search_query = request.GET.get('group_search', '').strip()
+    user_search_query = request.GET.get('user_search', '').strip()  # Добавляем поиск по пользователям
+
+    # Поиск групп пользователей
+    if group_search_query:
+        groups = UserGroup.objects.filter(
+            Q(name__icontains=group_search_query)
+        )
+    else:
+        groups = UserGroup.objects.all()
+
+    # Пагинация групп
+    paginator = Paginator(groups, items_per_page)
+    groups_page = paginator.get_page(page_number)
+
+    # Поиск пользователей
+    if user_search_query:
+        users = User.objects.filter(
+            Q(username__icontains=user_search_query) |
+            Q(first_name__icontains=user_search_query) |
+            Q(last_name__icontains=user_search_query)
+        )
+    else:
+        users = User.objects.all()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'create_group':
+            group_name = request.POST.get('group_name', '').strip()
+            selected_users = request.POST.getlist('selected_users')
+
+            if group_name:
+                if UserGroup.objects.filter(name=group_name).exists():
+                    messages.error(request, f"Группа с названием '{group_name}' уже существует.")
+                else:
+                    group = UserGroup.objects.create(name=group_name)
+                    if selected_users:
+                        group.users.add(*User.objects.filter(id__in=selected_users))
+                    messages.success(request, f"Группа '{group_name}' успешно создана.")
+            else:
+                messages.error(request, "Название группы не может быть пустым.")
+
+        elif action in ['activate_group', 'deactivate_group']:
+            group_id = request.POST.get('group_id')
+            group = get_object_or_404(UserGroup, id=group_id)
+
+            if action == 'activate_group':
+                group.is_active = True
+                group.save()
+                group.users.update(is_active=True)
+                messages.success(request, f"Группа '{group.name}' активирована. Все пользователи в группе включены.")
+            elif action == 'deactivate_group':
+                group.is_active = False
+                group.save()
+                group.users.update(is_active=False)
+                messages.success(request, f"Группа '{group.name}' деактивирована. Все пользователи в группе отключены.")
+
+        elif action == 'delete_group':
+            group_id = request.POST.get('group_id')
+            group = get_object_or_404(UserGroup, id=group_id)
+            group_name = group.name
+            group.delete()
+            messages.success(request, f"Группа '{group_name}' успешно удалена.")
+
+        elif action == 'add_users':
+            group_id = request.POST.get('group_id')
+            selected_users = request.POST.getlist('selected_users')
+            group = get_object_or_404(UserGroup, id=group_id)
+
+            if selected_users:
+                group.users.add(*User.objects.filter(id__in=selected_users))
+                messages.success(request, f"Пользователи успешно добавлены в группу '{group.name}'.")
+            else:
+                messages.error(request, "Необходимо выбрать пользователей для добавления.")
+
+        elif action == 'remove_users':
+            group_id = request.POST.get('group_id')
+            selected_users = request.POST.getlist('selected_users')
+            group = get_object_or_404(UserGroup, id=group_id)
+
+            if selected_users:
+                group.users.remove(*User.objects.filter(id__in=selected_users))
+                messages.success(request, f"Пользователи успешно удалены из группы '{group.name}'.")
+            else:
+                messages.error(request, "Необходимо выбрать пользователей для удаления.")
+
+        return redirect('manage_user_groups')
+    # Добавляем available_apps в контекст
+    available_apps = site.each_context(request).get("available_apps", [])
+
+    context = {
+        'groups': groups_page,
+        'users': users,
+        'items_per_page': items_per_page,
+        'search_query': search_query,
+        'group_search_query': group_search_query,
+        'user_search_query': user_search_query,  # Передаем поисковый запрос по пользователям в контекст
+        'available_apps': available_apps,
+    }
+
+    return render(request, 'admin/manage_user_groups.html', context)

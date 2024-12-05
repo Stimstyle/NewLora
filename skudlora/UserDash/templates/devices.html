@@ -8,7 +8,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>.S.E.L.I.K.O. - Управление устройствами</title>
+  <title>.S.E.L.I/O. - Управление устройствами</title>
   <link rel="icon" href="{% static 'icon/dashuser.ico' %}" type="image/x-icon">
   <link rel="shortcut icon" href="{% static 'icon/dashuser.ico' %}" type="image/x-icon">
   <!-- Google Font: Source Sans Pro -->
@@ -69,7 +69,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <!-- Brand Logo -->
     <div class="brand-link" style="background-color: #3498db;">
       <img src="{% static 'books/img/OnPhone.png' %}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-      <span class="brand-text font-weight-normal">.S.E.L.I.K.O.</span>
+      <span class="brand-text font-weight-normal">.S.E.L.I/O.</span>
     </div>
 
     <!-- Sidebar -->
@@ -79,9 +79,9 @@ scratch. This page gets rid of all links and provides the needed markup only.
       <div class="user-panel mt-2 pb-2 mb-3 d-flex">
         <div class="w-100 d-flex justify-content-between align-items-center">
           <a href="#" class="d-inline-block text-shadow">&nbsp&nbsp{{ request.user.username }}</a>
-          <button class="btn btn-link p-1">
-            <i class="fas fa-sign-out-alt"></i>
-          </button>
+          <button class="btn btn-link p-1" onclick="logoutUser()">
+            <i class="fas fa-sign-out-alt text-danger"></i> <!-- Класс text-danger делает значок красным -->
+        </button>
         </div>
       </div>
 
@@ -538,7 +538,11 @@ scratch. This page gets rid of all links and provides the needed markup only.
 <!-- ./wrapper -->
 
 <!-- REQUIRED SCRIPTS -->
-
+<script>
+  function logoutUser() {
+      window.location.href = "/";
+  }
+</script>
 <!-- jQuery -->
 <script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
