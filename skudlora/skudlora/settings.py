@@ -26,10 +26,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Использование базы данных для сессий
-SESSION_COOKIE_AGE = 3600  # Время жизни cookie (в секундах)
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Удаление сессии при закрытии браузера
-
 
 # Application definition
 

@@ -1,36 +1,44 @@
 from django.shortcuts import render, redirect
+from fuzzywuzzy import process, fuzz
+from django.contrib.auth.models import User 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
+from django.urls import reverse
+from datetime import datetime
 from django.core.paginator import Paginator
 from datetime import timedelta
 from django.db.models import Q, Case, When, Value, CharField, Avg, Min, Max
 from django.http import HttpResponse
 from post_receiver.models import DeviceData, APIKey
 from UserDash.models import Notification, DeviceGroup, EventNotification
-from access_control.models import DevicePermission, DeviceGroupPermission
+from access_control.models import DevicePermission, DeviceGroupPermission, DistrictGroup
 from django.contrib import messages
-from urllib.parse import urlencode
+from django.http import JsonResponse
 import openpyxl
 from openpyxl.utils import get_column_letter
-import folium
+import json
 from folium.plugins import MarkerCluster
+from django.views.decorators.http import require_GET
+
+def is_staff_or_superuser(user):
+    return user.is_staff or user.is_superuser
+def is_admin_or_arendator(user):
+    return user.is_superuser or user.is_staff or user.groups.filter(name='Arendators').exists()
 
 @login_required
-def index(request):
-    query = request.GET.get('search', '')
+@require_GET
+def ajax_update_table(request):
+    group_name = request.GET.get('group', '')
+    address = request.GET.get('address', '')
 
-    if request.user.is_superuser:
-        devices = DeviceData.objects.all()
+    if group_name:
+        devices = DeviceData.objects.filter(device_groups__group_name=group_name)
+    elif address:
+        devices = DeviceData.objects.filter(address__icontains=address)
     else:
-        user_devices = DeviceData.objects.filter(devicepermission__user=request.user)
-        device_groups_with_permission = DeviceGroup.objects.filter(devicegrouppermission__user=request.user)
-        devices_in_groups = DeviceData.objects.filter(device_groups__in=device_groups_with_permission)
-        devices = (user_devices | devices_in_groups).distinct()
-
-    devices = devices.filter(address__icontains=query)
+        devices = DeviceData.objects.all()
 
     current_time = timezone.now()
-
     devices = devices.annotate(
         status=Case(
             When(time__lt=current_time - timedelta(hours=1), then=Value('Оффлайн')),
@@ -39,6 +47,43 @@ def index(request):
         )
     )
 
+    devices_list = list(devices.values('address', 'status', 'dev_eui'))
+    return JsonResponse({'devices': devices_list})
+
+@login_required
+def index(request):
+    query = request.GET.get('search', '')
+    if request.user.is_superuser:
+        devices = DeviceData.objects.all()
+    else:
+        ud = DeviceData.objects.filter(devicepermission__user=request.user)
+        dgw = DeviceGroup.objects.filter(devicegrouppermission__user=request.user)
+        dig = DeviceData.objects.filter(device_groups__in=dgw)
+        dgp = DistrictGroup.objects.filter(user_permissions__user=request.user)
+        dgi = DeviceGroup.objects.filter(districts__in=dgp)
+        dii = DeviceData.objects.filter(device_groups__in=dgi)
+        devices = (ud | dig | dii).distinct()
+
+    if query:
+        query_lower = query.lower()
+        found = devices.filter(address__icontains=query_lower)
+        if not found.exists():
+            addrs = list(devices.values_list('id', 'address'))
+            choices = [(a[0], a[1].lower()) for a in addrs]
+            matched = process.extract(query_lower, [c[1] for c in choices], limit=50, scorer=fuzz.partial_ratio)
+            best_ids = [i[0] for val, score in matched if score > 50 for i in choices if i[1] == val]
+            devices = devices.filter(id__in=best_ids) if best_ids else devices.none()
+        else:
+            devices = found
+
+    current_time = timezone.now()
+    devices = devices.annotate(
+        status=Case(
+            When(time__lt=current_time - timedelta(hours=1), then=Value('Оффлайн')),
+            default=Value('Онлайн'),
+            output_field=CharField(),
+        )
+    )
     online_count = devices.filter(status='Онлайн').count()
     total_devices = devices.count()
     offline_count = total_devices - online_count
@@ -48,108 +93,36 @@ def index(request):
         if dev_eui:
             try:
                 device = DeviceData.objects.get(dev_eui=dev_eui)
-                if request.user.is_superuser or \
-                   DevicePermission.objects.filter(user=request.user, device=device).exists() or \
-                   DeviceGroupPermission.objects.filter(user=request.user, device_group__devices=device).exists():
-                    Notification.objects.create(
-                        message=f"Открытие двери по адресу {device.address} пользователем {request.user.username}",
-                        user=request.user,
-                        address=device.address,
-                        dev_eui=dev_eui,
-                        is_read=False,
-                        notification_type='system'
-                    )
+                Notification.objects.create(
+                    message=f"Открытие двери по адресу {device.address} пользователем {request.user.username}",
+                    user=request.user,
+                    address=device.address,
+                    dev_eui=dev_eui,
+                    is_read=False,
+                    notification_type='system'
+                )
             except DeviceData.DoesNotExist:
                 pass
 
     paginator = Paginator(devices, 10)
     page_number = request.GET.get('page', 1)
     page_devices = paginator.get_page(page_number)
-
-    # Фильтруем устройства с валидными координатами
     devices_with_coords = devices.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
+    
+    # Получаем данные групп, которым принадлежат устройства с координатами.
+    # Обратите внимание: раньше мы брали для групп только lat/lng и имя.
+    # Если нам нужно группировать устройства, стоит передавать все устройства группы отдельно.
+    # Но пока оставим как было, в groups_data одна точка на группу.
+    groups_data = list(DeviceGroup.objects.filter(devices__in=devices_with_coords)
+                       .distinct()
+                       .values('group_name', 'latitude', 'longitude'))
 
-    # Получаем группы, которые содержат устройства с координатами
-    device_groups = DeviceGroup.objects.filter(devices__in=devices_with_coords).distinct()
-
-    # Собираем данные о группах
-    groups_data = []
-    for group in device_groups:
-        if group.latitude is not None and group.longitude is not None:
-            groups_data.append({
-                'name': group.group_name,  # Используем правильное поле group_name
-                'latitude': group.latitude,
-                'longitude': group.longitude
-            })
-
-    # Получаем устройства, не входящие в никакую группу
+    # Устройства, не входящие в группы
     devices_not_in_groups = devices_with_coords.filter(device_groups__isnull=True)
 
-    # Сбор всех координат для вычисления границ
-    all_lats = []
-    all_lons = []
+    # Преобразуем QuerySet устройств в список словарей
+    devices_data = list(devices_not_in_groups.values('latitude', 'longitude', 'address', 'status', 'dev_eui'))
 
-    for group in groups_data:
-        all_lats.append(group['latitude'])
-        all_lons.append(group['longitude'])
-
-    for device in devices_not_in_groups:
-        all_lats.append(device.latitude)
-        all_lons.append(device.longitude)
-
-    if all_lats and all_lons:
-        avg_lat = sum(all_lats) / len(all_lats)
-        avg_lon = sum(all_lons) / len(all_lons)
-
-        min_lat = min(all_lats)
-        max_lat = max(all_lats)
-        min_lon = min(all_lons)
-        max_lon = max(all_lons)
-    else:
-        # Стандартные координаты, если нет устройств
-        avg_lat, avg_lon = 0, 0
-        min_lat, max_lat, min_lon, max_lon = -10, 10, -10, 10  # Примерные границы
-
-    # Создание карты с помощью Folium
-    folium_map = folium.Map(
-        location=[avg_lat, avg_lon],
-        zoom_start=12,
-        attributionControl=False  # Отключение стандартной атрибуции
-    )
-
-    # Добавляем собственный TileLayer с кастомной атрибуцией
-    folium.TileLayer(
-        tiles='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attr='© OpenStreetMap contributors | Ваш текст здесь',
-        name='OpenStreetMap',
-        control=False
-    ).add_to(folium_map)
-
-    # Создаём кластер маркеров для отдельных устройств
-    marker_cluster = MarkerCluster(name='Устройства').add_to(folium_map)
-
-    # Добавление маркеров для групп
-    for group in groups_data:
-        folium.Marker(
-            location=[group['latitude'], group['longitude']],
-            popup=f"Группа: {group['name']}",
-            icon=folium.Icon(color='blue', icon='info-sign')  # Синий маркер для групп
-        ).add_to(folium_map)
-
-    # Добавление маркеров для устройств, не входящих в группы
-    for device in devices_not_in_groups:
-        folium.Marker(
-            location=[device.latitude, device.longitude],
-            popup=f"{device.address} - {device.status}",
-            icon=folium.Icon(color='green' if device.status == 'Онлайн' else 'red')
-        ).add_to(marker_cluster)
-
-    # Установка границ карты
-    if all_lats and all_lons:
-        folium_map.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
-
-    # Преобразование карты в HTML
-    map_html = folium_map._repr_html_()
 
     return render(request, 'index.html', {
         'devices': page_devices,
@@ -157,7 +130,8 @@ def index(request):
         'total_devices': total_devices,
         'online_count': online_count,
         'offline_count': offline_count,
-        'map_html': map_html
+        'groups_data': json.dumps(groups_data),
+        'devices_data': json.dumps(devices_data),
     })
 
 
@@ -167,21 +141,27 @@ def devices(request):
     query = request.GET.get('search', '')
 
     if request.user.is_superuser:
-        # Суперпользователь видит все устройства
         devices = DeviceData.objects.all()
     else:
-        # Обычный пользователь видит только устройства, к которым у него есть доступ
-        # Получаем устройства, к которым у пользователя есть прямые разрешения
+        # Устройства, явно привязанные к пользователю
         user_devices = DeviceData.objects.filter(devicepermission__user=request.user)
-
-        # Получаем группы устройств, к которым у пользователя есть разрешения
+        
+        # Устройства в группах, доступных пользователю
         device_groups_with_permission = DeviceGroup.objects.filter(devicegrouppermission__user=request.user)
-
-        # Получаем устройства из этих групп
         devices_in_groups = DeviceData.objects.filter(device_groups__in=device_groups_with_permission)
 
-        # Объединяем устройства из прямых разрешений и из групповых разрешений
-        devices = (user_devices | devices_in_groups).distinct()
+        # Устройства, относящиеся к районам, доступным пользователю
+        district_groups_with_permission = DistrictGroup.objects.filter(
+            user_permissions__user=request.user
+        )
+        device_groups_in_districts = DeviceGroup.objects.filter(
+            districts__in=district_groups_with_permission
+        )
+        devices_in_districts = DeviceData.objects.filter(device_groups__in=device_groups_in_districts)
+
+        # Объединяем устройства из всех источников и удаляем дубликаты
+        devices = (user_devices | devices_in_groups | devices_in_districts).distinct()
+
 
     # Применяем фильтр поиска, если он задан
     if query:
@@ -275,109 +255,88 @@ def devices(request):
 
 
 
-from django.core.paginator import Paginator
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-
-from datetime import timedelta
-from django.utils import timezone
-
-from datetime import timedelta
-from django.utils import timezone
-
 @login_required
 def notification(request):
-    # Получаем значение для items_per_page, если оно задано, или 25 по умолчанию
+    # Получение параметров из POST или сессии
     items_per_page = request.POST.get('items_per_page', request.session.get('items_per_page', 25))
-
-    # Проверяем, что items_per_page - это число, если нет, используем 25
     try:
         items_per_page = int(items_per_page)
     except ValueError:
         items_per_page = 25
-
-    # Если значение items_per_page было отправлено, сохраняем его в сессии для будущих запросов
     request.session['items_per_page'] = items_per_page
 
-    # Инициализация фильтра по времени
-    time_range = request.POST.get('time_range', 'all')  # Значение по умолчанию - "всё время"
+    time_range = request.POST.get('time_range', request.session.get('time_range', 'all'))
+    notification_type = request.POST.get('notification_type', request.session.get('notification_type', None))
+    user_display = request.POST.get('user_display', request.session.get('user_display', 'all'))
+    request.session['time_range'] = time_range
+    request.session['notification_type'] = notification_type
+    request.session['user_display'] = user_display
 
-    # Обработка действий пользователя через POST-запрос
+    # Получение уведомлений
+    notifications_full = Notification.objects.all()
+
+    current_time = timezone.now()
+    if time_range == 'day':
+        notifications_full = notifications_full.filter(timestamp__gte=current_time - timedelta(days=1))
+    elif time_range == 'week':
+        notifications_full = notifications_full.filter(timestamp__gte=current_time - timedelta(weeks=1))
+    elif time_range == 'month':
+        notifications_full = notifications_full.filter(timestamp__gte=current_time - timedelta(days=30))
+    elif time_range == 'year':
+        notifications_full = notifications_full.filter(timestamp__gte=current_time - timedelta(days=365))
+
+    if notification_type:
+        notifications_full = notifications_full.filter(notification_type=notification_type)
+
+    # Фильтрация по пользователю, если выбрано не 'all'
+    selected_user = None
+    if user_display and user_display != 'all':
+        try:
+            selected_user = User.objects.get(id=user_display)
+            notifications_full = notifications_full.filter(user=selected_user)
+        except User.DoesNotExist:
+            pass
+
+    notifications_full = notifications_full.order_by('-timestamp')
+
+    paginator = Paginator(notifications_full, items_per_page)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    selected_notifications = request.session.get('selected_notifications', [])
+
     if request.method == "POST":
-        notification_type = request.POST.get('notification_type', None)
-
+        page_number = request.POST.get('page', 1)
         selected_notifications = request.POST.getlist('selected_notifications')
-
+        
         if 'select_all' in request.POST:
             if request.POST['select_all'] == 'true':
-                # Выбрать все уведомления после фильтрации
-                selected_notifications = [str(notification.id) for notification in notifications]
+                selected_notifications = list(notifications_full.values_list('id', flat=True))
             elif request.POST['select_all'] == 'false':
-                # Отменить выбор всех уведомлений
                 selected_notifications = []
 
         if 'delete_selected' in request.POST:
-            # Удаляем выбранные уведомления
-            if request.user.is_superuser:
-                # Суперпользователь может удалять любые уведомления
-                Notification.objects.filter(id__in=selected_notifications).delete()
-            else:
-                # Обычный пользователь может удалять только свои уведомления
-                Notification.objects.filter(id__in=selected_notifications, user=request.user).delete()
-            return redirect('notification')
+            Notification.objects.filter(id__in=selected_notifications).delete()
+            selected_notifications = []
+            request.session['selected_notifications'] = selected_notifications
+            url = reverse('notification') + f'?page={page_number}'
+            return redirect(url)
 
         if 'mark_as_read' in request.POST:
-            # Отмечаем выбранные уведомления как прочитанные
-            if request.user.is_superuser:
-                Notification.objects.filter(id__in=selected_notifications).update(is_read=True)
-            else:
-                Notification.objects.filter(id__in=selected_notifications, user=request.user).update(is_read=True)
+            Notification.objects.filter(id__in=selected_notifications).update(is_read=True)
 
         if 'notification_id' in request.POST:
             notification_id = request.POST.get('notification_id')
             try:
-                if request.user.is_superuser:
-                    notification = Notification.objects.get(id=notification_id)
-                else:
-                    notification = Notification.objects.get(id=notification_id, user=request.user)
-                notification.is_read = True
-                notification.save()
+                n = Notification.objects.get(id=notification_id)
+                n.is_read = True
+                n.save()
             except Notification.DoesNotExist:
-                pass  # Уведомление не найдено или нет доступа
+                pass
 
-        # Сохраняем список выбранных уведомлений в сессии
         request.session['selected_notifications'] = selected_notifications
-
-    # Теперь формируем queryset уведомлений в зависимости от того, является ли пользователь суперпользователем
-    if request.user.is_superuser:
-        # Суперпользователь видит все уведомления
-        notifications = Notification.objects.all()
-    else:
-        # Обычный пользователь видит только свои уведомления
-        notifications = Notification.objects.filter(user=request.user)
-
-    # Фильтрация уведомлений по времени
-    current_time = timezone.now()
-    if time_range == 'day':
-        notifications = notifications.filter(timestamp__gte=current_time - timedelta(days=1))
-    elif time_range == 'week':
-        notifications = notifications.filter(timestamp__gte=current_time - timedelta(weeks=1))
-    elif time_range == 'month':
-        notifications = notifications.filter(timestamp__gte=current_time - timedelta(days=30))
-    elif time_range == 'year':
-        notifications = notifications.filter(timestamp__gte=current_time - timedelta(days=365))
-
-    # Фильтрация по типу уведомления
-    notification_type = request.POST.get('notification_type', None)
-    if notification_type:
-        notifications = notifications.filter(notification_type=notification_type)
-
-    # Сортируем уведомления по времени
-    notifications = notifications.order_by('-timestamp')
-
-    paginator = Paginator(notifications, items_per_page)
-    page_number = request.GET.get('page')  # Номер текущей страницы
-    page_obj = paginator.get_page(page_number)
+        url = reverse('notification') + f'?page={page_number}'
+        return redirect(url)
 
     selected_notifications = request.session.get('selected_notifications', [])
 
@@ -386,16 +345,50 @@ def notification(request):
         'selected_notifications': selected_notifications,
         'notification_type': notification_type,
         'items_per_page': items_per_page,
-        'time_range': time_range,  # Передаём выбранное значение времени в шаблон
-        'page_range': page_obj.paginator.page_range,
+        'time_range': time_range,
+        'user_display': user_display,
+        'selected_user': selected_user,
+        'page_range': paginator.page_range,
     })
 
-def is_staff_or_superuser(user):
-    return user.is_staff or user.is_superuser
-def is_admin_or_arendator(user):
-    return user.is_superuser or user.is_staff or user.groups.filter(name='Arendators').exists()
-
-
+@login_required
+def user_search(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'results': []})
+    query = request.GET.get('q', '')
+    page = int(request.GET.get('page', 1))
+    per_page = 30
+    if request.user.is_superuser:
+        base_qs = Notification.objects.all()
+    else:
+        base_qs = Notification.objects.filter(user=request.user)
+    if query:
+        users = User.objects.filter(
+            Q(username__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query)
+        ).order_by('username')
+        total = users.count()
+        start = (page - 1) * per_page
+        end = start + per_page
+        users = users[start:end]
+    else:
+        latest_notifications = base_qs.order_by('-timestamp')
+        seen = []
+        for n in latest_notifications:
+            if n.user_id not in seen:
+                seen.append(n.user_id)
+            if len(seen) == 20:
+                break
+        users = User.objects.filter(id__in=seen)
+        total = len(users)
+    results = [{'id': u.id, 'text': f"{u.username} ({u.get_full_name()})"} for u in users]
+    return JsonResponse({
+        'results': results,
+        'pagination': {
+            'more': False
+        }
+    })
 
 @user_passes_test(is_staff_or_superuser, login_url='access_denied')
 def groups(request):

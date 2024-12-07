@@ -9,14 +9,23 @@ scratch. This page gets rid of all links and provides the needed markup only.
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>.S.E.L.I/O. - уведомления</title>
+
+
+
   <link rel="icon" href="{% static 'icon/dashuser.ico' %}" type="image/x-icon">
   <link rel="shortcut icon" href="{% static 'icon/dashuser.ico' %}" type="image/x-icon">
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+  <link rel="stylesheet" href="{% static 'plugins/select2/css/select2.min.css' %}">
+  <link rel="stylesheet" href="{% static 'plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
   <link rel="stylesheet" href="{% static 'dist/css/adminlte.css' %}">
   <script src="https://code.iconify.design/2/2.0.3/iconify.min.js"></script>
+
+
+
+
 
 </head>
 <body class="hold-transition sidebar-mini">
@@ -165,6 +174,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
     <!-- Main content -->
     <form method="post" action="{% url 'notification' %}">
       {% csrf_token %}
+      <input type="hidden" name="page" value="{{ notifications.number }}">
       <div class="content">
         <div class="container-fluid">
             <div class="col-12">
@@ -191,12 +201,16 @@ scratch. This page gets rid of all links and provides the needed markup only.
                     <div class="col-sm-3">
                       <div class="form-group">
                         <label>Отобразить пользователей</label>
-                        <select class="custom-select">
-                          <option>---</option>
-                          <option>Дом.РУ</option>
+                        <select class="form-control select2" id="user-display-select" name="user_display">
+                          <!-- Если вы хотите загрузить начальные 30 пользователей, раскомментируйте следующий блок -->
+                          <option value="all" {% if user_display == 'all' %}selected{% endif %}>Отобразить всех</option>
+                          {% if selected_user %}
+                              <option value="{{ selected_user.id }}" selected>{{ selected_user.username }}</option>
+                          {% endif %}
                         </select>
                       </div>
                     </div>
+                  
                     <div class="col-sm-3">
                       <div class="form-group">
                         <label>Отобразить за...</label>
@@ -221,17 +235,6 @@ scratch. This page gets rid of all links and provides the needed markup only.
                       </div>
                     </div>
                   </div>
-                  <label>Настройки поиска</label>
-                  <div class="row">
-                    <div class="col-sm-3">
-                      <div class="form-group">
-                          <div class="custom-control custom-switch custom-switch-off-danger custom-switch-on-success">
-                            <input type="checkbox" class="custom-control-input" id="customSwitch3">
-                            <label class="custom-control-label" for="customSwitch3">Отключить системные уведомления</label>
-                          </div>
-                      </div>
-                    </div>
-                  </div> 
                   <div class="row">
                     <div class="col-auto mt-3 mt-md-0">
                       <button type="submit" class="btn btn-success">Применить</button>
@@ -333,16 +336,62 @@ scratch. This page gets rid of all links and provides the needed markup only.
 <!-- ./wrapper -->
 
 <!-- REQUIRED SCRIPTS -->
-<script>
-  function logoutUser() {
-      window.location.href = "/";
-  }
-</script>
+
 <!-- jQuery -->
 <script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 <script src="{% static 'dist/js/adminlte.min.js' %}"></script>
 <script src="{% static 'plugins/Amyscript/moonsun.js' %}"></script>
+<script src="{% static 'plugins/select2/js/select2.full.min.js' %}"></script>
+
+<script>
+  $(document).ready(function() {
+      $('#user-display-select').select2({
+          theme: 'bootstrap4',
+          placeholder: 'Выберите пользователя',
+          allowClear: true,
+          ajax: {
+              url: "{% url 'user_search' %}",
+              dataType: 'json',
+              delay: 250,
+              data: function (params) {
+                  return {
+                      q: params.term,
+                      page: params.page || 1
+                  };
+              },
+              processResults: function (data, params) {
+                  var defaultOption = { id: 'all', text: 'Отобразить всех' };
+                  if (!Array.isArray(data.results)) {
+                      data.results = [];
+                  }
+                  var results = [defaultOption].concat(data.results);
+                  return {
+                      results: results,
+                      pagination: { more: false }
+                  };
+              },
+              cache: true
+          },
+          minimumInputLength: 0
+      });
+
+      // Удаляем автоматическую установку значения
+      // $('#user-display-select').val('all').trigger('change');
+  });
+</script>
+
+
+
+
+<!-- Logout Function -->
+<script>
+  function logoutUser() {
+      window.location.href = "/";
+  }
+</script>
+
+
 
 </body>
 </html>

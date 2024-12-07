@@ -16,7 +16,34 @@ scratch. This page gets rid of all links and provides the needed markup only.
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
   <link rel="stylesheet" href="{% static 'dist/css/adminlte.css' %}">
-  <script src="https://code.iconify.design/2/2.0.3/iconify.min.js"></script>
+  <!-- Leaflet CSS -->
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.min.css" rel="stylesheet">
+
+  <style>
+   #map {
+  height: 500px;
+  width: 100%;
+  border: 1px solid #3498db;
+  }
+
+  /* Скрытие атрибуции */
+  .leaflet-control-attribution {
+    display: none;
+  }
+
+  /* Для мобильных устройств с шириной экрана менее 768px */
+  @media (max-width: 768px) {
+    #map {
+      height: 300px;
+    }
+  }
+  </style>
+
+
+
 </head>
 <body class="hold-transition sidebar-mini">
 <div class="wrapper">
@@ -266,12 +293,11 @@ scratch. This page gets rid of all links and provides the needed markup only.
               <section class="content">
                 <div class="container-fluid">
                   <div class="row">
+                    <div class="col-md-6 col-sm-6">
+                      <div id="map"></div>
+                    </div>
                       <div class="col-md-6 col-sm-6">
-                        <!-- Вставляем карту Folium -->
-                        {{ map_html|safe }}
-                      </div>
-                      <div class="col-md-6 col-sm-6">
-                        <table class="table table-sm th text-nowrap">
+                        <table  id="devices-table" class="table table-sm th text-nowrap">
                           <thead>
                             <tr>
                               <th style="width: auto;">Адрес</th>
@@ -316,7 +342,7 @@ scratch. This page gets rid of all links and provides the needed markup only.
                 </div>  
               </section>
               <div class="card-footer clearfix">
-                <ul class="pagination pagination-sm m-0 float-left">
+                <ul class="pagination pagination-sm m-0 float-right">
                   {% if devices.has_previous %}
                     <li class="page-item"><a class="page-link" href="?page=1">&laquo;</a></li>
                     <li class="page-item"><a class="page-link" href="?page={{ devices.previous_page_number }}">‹</a></li>
@@ -397,23 +423,193 @@ scratch. This page gets rid of all links and provides the needed markup only.
 <!-- ./wrapper -->
 
 <!-- REQUIRED SCRIPTS -->
+
+
 <script>
   function logoutUser() {
       window.location.href = "/";
   }
 </script>
+
+
+
+
+
 <!-- jQuery -->
 <script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 <script src="{% static 'dist/js/adminlte.min.js' %}"></script>
 <script src="{% static 'plugins/Amyscript/moonsun.js' %}"></script>
+
+
+
+<!-- Передаём groups_data и devices_data как JSON -->
+<script type="application/json" id="groups-data">
+  {{ groups_data|safe }}
+</script>
+<script type="application/json" id="devices-data">
+  {{ devices_data|safe }}
+</script>
+
+
 <script>
-  document.addEventListener("DOMContentLoaded", function(){
-      var attributions = document.querySelectorAll('.leaflet-control-attribution');
-      attributions.forEach(function(attr){
-          attr.remove();
-      });
+  document.addEventListener("DOMContentLoaded", function () {
+    const groups = JSON.parse(document.getElementById('groups-data').textContent || '[]');
+    const devices = JSON.parse(document.getElementById('devices-data').textContent || '[]');
+  
+    const map = L.map('map', { attributionControl: false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(map);
+  
+    // Настройка кластеров
+    const markerClusters = L.markerClusterGroup({
+      spiderfyOnEveryClick: true,
+      iconCreateFunction: function (cluster) {
+        const count = cluster.getChildCount();
+        return L.divIcon({
+          html: '<div>' + count + '</div>',
+          className: 'custom-cluster-icon',
+          iconSize: [30, 30]
+        });
+      }
+    });
+  
+    const bounds = [];
+  
+    // Обработчик клика по группе
+    function onGroupClick(e) {
+      map.setView(e.latlng, 16);
+      const popupContent = e.target.getPopup().getContent();
+      const groupName = popupContent.replace('Группа: ', '').trim();
+  
+      fetch('/ajax_update_table/?group=' + encodeURIComponent(groupName), {
+        method: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        const tbody = document.querySelector('#devices-table tbody');
+        tbody.innerHTML = '';
+        data.devices.forEach(d => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${d.address}</td>
+            <td>${d.status}</td>
+            <td>
+              <form method="post" action="">
+                {% csrf_token %}
+                <input type="hidden" name="dev_eui" value="${d.dev_eui}">
+                <button class="btn btn-primary btn-sm" style="background-color: #007bff;">Открыть</button>
+              </form>
+            </td>
+            <td>${d.status === 'Онлайн' ? '<i class="fas fa-circle text-success"></i>' : '<i class="fas fa-circle text-danger"></i>'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(error => console.error('Fetch error:', error));
+    }
+  
+    // Обработчик клика по устройству
+    function onDeviceClick(e) {
+      // Зумируем на позицию маркера
+      const latLng = e.target.getLatLng();
+      map.setView(latLng, 16);
+
+      const address = e.target.getPopup().getContent();
+
+      fetch('/ajax_update_table/?address=' + encodeURIComponent(address), {
+        method: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        const tbody = document.querySelector('#devices-table tbody');
+        tbody.innerHTML = '';
+        data.devices.forEach(d => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${d.address}</td>
+            <td>${d.status}</td>
+            <td>
+              <form method="post" action="">
+                {% csrf_token %}
+                <input type="hidden" name="dev_eui" value="${d.dev_eui}">
+                <button class="btn btn-primary btn-sm" style="background-color: #007bff;">Открыть</button>
+              </form>
+            </td>
+            <td>${d.status === 'Онлайн' ? '<i class="fas fa-circle text-success"></i>' : '<i class="fas fa-circle text-danger"></i>'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(error => console.error('Fetch error:', error));
+    }
+  
+    // Добавляем маркеры для групп (по одному на группу)
+    groups.forEach(group => {
+      if (group.latitude && group.longitude) {
+        const marker = L.marker([group.latitude, group.longitude]).bindPopup(`Группа: ${group.group_name}`);
+        markerClusters.addLayer(marker);
+        bounds.push([group.latitude, group.longitude]);
+        marker.on('click', onGroupClick);
+      }
+    });
+  
+    // Добавляем маркеры для устройств
+    devices.forEach(device => {
+      if (device.latitude && device.longitude) {
+        const marker = L.marker([device.latitude, device.longitude], {
+          icon: L.icon({
+            iconUrl: device.status === 'Онлайн' ? 
+              'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png' :
+              'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@1.0.0/img/marker-icon-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+          })
+        }).bindPopup(device.address);
+        markerClusters.addLayer(marker);
+        bounds.push([device.latitude, device.longitude]);
+        marker.on('click', onDeviceClick);
+      }
+    });
+  
+    map.addLayer(markerClusters);
+  
+    if (bounds.length > 0) {
+      map.fitBounds(L.latLngBounds(bounds), { padding: [50, 50] });
+    } else {
+      map.setView([59.95, 30.3167], 10);
+    }
   });
 </script>
+
+
+
+<style>
+  .custom-cluster-icon {
+    background: #3887be;
+    color: #fff;
+    text-align: center;
+    border-radius: 50%;
+    line-height: 30px;
+    font-weight: bold;
+    border: 2px solid #fff;
+  }
+</style>
+
+
 </body>
 </html>

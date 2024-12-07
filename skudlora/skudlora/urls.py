@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 # skudlora/urls.py
-
+from UserDash.views import ajax_update_table
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import path, include  # Импортируем include
@@ -25,6 +25,7 @@ urlpatterns = [
     path('', include('access_control.urls')),  # Подключаем URL-ы приложения access_control
     path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
     path('post_receiver/', include('post_receiver.urls')),  # Подключаем маршруты из post_receiver
+    path('ajax_update_table/', ajax_update_table, name='ajax_update_table'),
     path('UserDash/', include('UserDash.urls')),
 ]
 
