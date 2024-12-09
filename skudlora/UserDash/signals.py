@@ -15,5 +15,6 @@ def create_event_notification(sender, instance, created, **kwargs):
             address=instance.address,
             user=instance.user,
             notification_type=instance.notification_type,
-            timestamp=instance.timestamp
+            timestamp=instance.timestamp,
+            message=instance.message  # Копируем сообщение
         )

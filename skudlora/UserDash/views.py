@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
 from django.urls import reverse
-from datetime import datetime
+from datetime import datetime, time
 from django.core.paginator import Paginator
 from datetime import timedelta
 from django.db.models import Q, Case, When, Value, CharField, Avg, Min, Max
@@ -16,6 +16,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 import openpyxl
 from openpyxl.utils import get_column_letter
+from openpyxl.styles import Border, Side, PatternFill, Font
 import json
 from folium.plugins import MarkerCluster
 from django.views.decorators.http import require_GET
@@ -453,7 +454,6 @@ def event(request):
             messages.warning(request, "Не выбрано ни одного уведомления для удаления.")
         return redirect('event')
 
-    # Фильтрация уведомлений
     dev_eui = request.GET.get('dev_eui', '').strip()
     address = request.GET.get('address', '').strip()
     user_filter = request.GET.get('user', '').strip()
@@ -464,7 +464,6 @@ def event(request):
     end_time = request.GET.get('end_time', '').strip()
     items_per_page = request.GET.get('items_per_page', 25)
     page = request.GET.get('page')
-
     export_excel = request.GET.get('export_excel', 'false').lower() == 'true'
 
     notifications = EventNotification.objects.all()
@@ -481,69 +480,87 @@ def event(request):
         try:
             start_date_obj = datetime.strptime(start_date, '%Y-%m-%d')
             if start_time:
-                start_datetime_str = f"{start_date} {start_time}"
-                start_datetime_obj = datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M')
+                start_datetime_obj = datetime.strptime(f"{start_date} {start_time}", '%Y-%m-%d %H:%M')
                 notifications = notifications.filter(timestamp__gte=start_datetime_obj)
             else:
-                notifications = notifications.filter(timestamp__gte=start_date_obj)
+                # Устанавливаем время на начало дня
+                start_datetime_obj = datetime.combine(start_date_obj.date(), time.min)
+                notifications = notifications.filter(timestamp__gte=start_datetime_obj)
         except ValueError:
             messages.error(request, "Некорректный формат начальной даты или времени.")
     if end_date:
         try:
             end_date_obj = datetime.strptime(end_date, '%Y-%m-%d')
             if end_time:
-                end_datetime_str = f"{end_date} {end_time}"
-                end_datetime_obj = datetime.strptime(end_datetime_str, '%Y-%m-%d %H:%M')
-                notifications = notifications.filter(timestamp__lte=end_datetime_obj)
+                end_datetime_obj = datetime.strptime(f"{end_date} {end_time}", '%Y-%m-%d %H:%M')
             else:
-                notifications = notifications.filter(timestamp__lte=end_date_obj)
+                # Устанавливаем время на конец дня
+                end_datetime_obj = datetime.combine(end_date_obj.date(), time.max)
+            notifications = notifications.filter(timestamp__lte=end_datetime_obj)
         except ValueError:
             messages.error(request, "Некорректный формат конечной даты или времени.")
 
     notifications = notifications.order_by('-timestamp')
 
     if export_excel:
-        # Генерация Excel-файла
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Уведомления"
 
-        # Заголовки столбцов
-        headers = ['DevEUI', 'Адрес']
+        # Заголовки столбцов в нужном порядке
+        headers = ['Сообщение', 'Время']
         if is_admin_or_arendator(request.user):
             headers.append('Пользователь')
-        headers.extend(['Тип уведомления', 'Время'])
+        headers.extend(['Тип уведомления', 'DevEUI'])
 
         ws.append(headers)
 
-        # Добавление данных
-        for notification in notifications:
+        # Определение стилей
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        gray_fill = PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
+        light_gray_fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+
+        for idx, notification in enumerate(notifications, start=2):
             row = [
-                notification.dev_eui,
-                notification.address,
+                notification.message,
+                notification.timestamp.strftime('%Y-%m-%d %H:%M'),
             ]
             if is_admin_or_arendator(request.user):
                 row.append(notification.user.username)
             row.extend([
                 notification.get_notification_type_display(),
-                notification.timestamp.strftime('%Y-%m-%d %H:%M'),
+                notification.dev_eui,
             ])
             ws.append(row)
 
+            # Применение границ
+            for col_num in range(1, len(row) + 1):
+                cell = ws.cell(row=idx, column=col_num)
+                cell.border = thin_border
+
+            # Применение фона для чередования строк
+            fill = gray_fill if idx % 2 == 0 else light_gray_fill
+            for col_num in range(1, len(row) + 1):
+                ws.cell(row=idx, column=col_num).fill = fill
+
+        # Применение границ и стилей к заголовкам
+        for col_num in range(1, len(headers) + 1):
+            cell = ws.cell(row=1, column=col_num)
+            cell.border = thin_border
+            cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+            cell.font = Font(bold=True)
+
         # Автоматическая настройка ширины столбцов
         for column in ws.columns:
-            max_length = 0
-            column_letter = get_column_letter(column[0].column)
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
+            max_length = max(len(str(cell.value)) if cell.value else 0 for cell in column)
             adjusted_width = (max_length + 2)
-            ws.column_dimensions[column_letter].width = adjusted_width
+            ws.column_dimensions[get_column_letter(column[0].column)].width = adjusted_width
 
-        # Подготовка HTTP-ответа
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=notifications.xlsx'
         wb.save(response)

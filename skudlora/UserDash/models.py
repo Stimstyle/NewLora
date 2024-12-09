@@ -22,8 +22,7 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.get_notification_type_display()} - {self.message} ({self.timestamp})"
 
-from django.db import models
-from django.contrib.auth.models import User
+
 
 class EventNotification(models.Model):
     NOTIFICATION_TYPES = [
@@ -39,6 +38,7 @@ class EventNotification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
     notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='info', verbose_name="Тип уведомления")
     timestamp = models.DateTimeField(auto_now_add=True, verbose_name="Время")
+    message = models.TextField(null=True, blank=True, verbose_name="Сообщение")  # Новое поле
 
     def __str__(self):
         return f"{self.get_notification_type_display()} - {self.dev_eui} - {self.address} ({self.timestamp})"
